@@ -1,6 +1,6 @@
 {
   "name": "@botpress/cdk-postgresql",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Postgresql constructs for AWS CDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -14,15 +14,15 @@
     "typescript": "3.7.2"
   },
   "peerDependencies": {
-    "@aws-cdk/core": "1.71.0"
+    "@aws-cdk/core": "1.74.0"
   },
   "dependencies": {
-    "@aws-cdk/aws-iam": "1.71.0",
-    "@aws-cdk/aws-lambda": "1.71.0",
-    "@aws-cdk/aws-logs": "1.71.0",
-    "@aws-cdk/aws-s3": "1.71.0",
-    "@aws-cdk/core": "1.71.0",
-    "@aws-cdk/custom-resources": "1.71.0",
+    "@aws-cdk/aws-iam": "1.74.0",
+    "@aws-cdk/aws-lambda": "1.74.0",
+    "@aws-cdk/aws-logs": "1.74.0",
+    "@aws-cdk/aws-s3": "1.74.0",
+    "@aws-cdk/core": "1.74.0",
+    "@aws-cdk/custom-resources": "1.74.0",
     "@types/node": "^12.6.2"
   },
   "jest": {
