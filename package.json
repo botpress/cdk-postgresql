@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "postinstall": "cd lib/lambda/postgresql;npm i",
+    "postinstall": "cd lib/lambda/postgresql && npm i",
     "build": "tsc",
     "watch": "tsc -w"
   },
