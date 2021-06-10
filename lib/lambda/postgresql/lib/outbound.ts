@@ -1,9 +1,9 @@
 /* istanbul ignore file */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import * as AWS from 'aws-sdk';
+import * as AWS from "aws-sdk";
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { ConfigurationOptions } from 'aws-sdk/lib/config';
-import * as https from 'https';
+import { ConfigurationOptions } from "aws-sdk/lib/config-base";
+import * as https from "https";
 
 const FRAMEWORK_HANDLER_TIMEOUT = 900000; // 15 minutes
 
@@ -14,11 +14,14 @@ const awsSdkConfig: ConfigurationOptions = {
   httpOptions: { timeout: FRAMEWORK_HANDLER_TIMEOUT },
 };
 
-async function defaultHttpRequest(options: https.RequestOptions, responseBody: string) {
+async function defaultHttpRequest(
+  options: https.RequestOptions,
+  responseBody: string
+) {
   return new Promise((resolve, reject) => {
     try {
       const request = https.request(options, resolve);
-      request.on('error', reject);
+      request.on("error", reject);
       request.write(responseBody);
       request.end();
     } catch (e) {
@@ -30,7 +33,9 @@ async function defaultHttpRequest(options: https.RequestOptions, responseBody: s
 let sfn: AWS.StepFunctions;
 let lambda: AWS.Lambda;
 
-async function defaultStartExecution(req: AWS.StepFunctions.StartExecutionInput): Promise<AWS.StepFunctions.StartExecutionOutput> {
+async function defaultStartExecution(
+  req: AWS.StepFunctions.StartExecutionInput
+): Promise<AWS.StepFunctions.StartExecutionOutput> {
   if (!sfn) {
     sfn = new AWS.StepFunctions(awsSdkConfig);
   }
@@ -38,7 +43,9 @@ async function defaultStartExecution(req: AWS.StepFunctions.StartExecutionInput)
   return await sfn.startExecution(req).promise();
 }
 
-async function defaultInvokeFunction(req: AWS.Lambda.InvocationRequest): Promise<AWS.Lambda.InvocationResponse> {
+async function defaultInvokeFunction(
+  req: AWS.Lambda.InvocationRequest
+): Promise<AWS.Lambda.InvocationResponse> {
   if (!lambda) {
     lambda = new AWS.Lambda(awsSdkConfig);
   }
