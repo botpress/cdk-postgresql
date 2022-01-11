@@ -1,8 +1,9 @@
-import cdk = require("@aws-cdk/core");
-import lambda = require("@aws-cdk/aws-lambda");
-import ec2 = require("@aws-cdk/aws-ec2");
-import logs = require("@aws-cdk/aws-logs");
-import path = require("path");
+import * as cdk from "aws-cdk-lib";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as path from "path";
+import { Construct } from "constructs";
 
 export interface ConnectionInfo {
   /**
@@ -72,7 +73,7 @@ interface ProviderProps {
   securityGroups?: ec2.ISecurityGroup[];
 }
 
-export class Provider extends cdk.Construct {
+export class Provider extends Construct {
   // /**
   //  * The custom resource provider.
   //  */
@@ -83,7 +84,7 @@ export class Provider extends cdk.Construct {
    */
   public readonly onEventHandler: lambda.Function;
 
-  constructor(scope: cdk.Construct, id: string, props?: ProviderProps) {
+  constructor(scope: Construct, id: string, props?: ProviderProps) {
     super(scope, id);
 
     this.onEventHandler = new lambda.Function(this, "OnEventHandler", {
@@ -121,8 +122,8 @@ export interface DatabaseProps {
   provider?: Provider;
 }
 
-export class Database extends cdk.Construct {
-  constructor(scope: cdk.Construct, id: string, props: DatabaseProps) {
+export class Database extends Construct {
+  constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
     const { connectionInfo } = props;
@@ -169,8 +170,8 @@ export interface RoleProps {
    */
   provider?: Provider;
 }
-export class Role extends cdk.Construct {
-  constructor(scope: cdk.Construct, id: string, props: RoleProps) {
+export class Role extends Construct {
+  constructor(scope: Construct, id: string, props: RoleProps) {
     super(scope, id);
 
     const { connectionInfo } = props;
