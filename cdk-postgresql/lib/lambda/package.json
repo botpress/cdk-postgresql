@@ -7,7 +7,7 @@
   "devDependencies": {
     "@types/pg": "7.14.3",
     "@types/pg-format": "1.0.0",
-    "@types/aws-lambda": "8.10.56",
+    "@types/aws-lambda": "8.10.89",
     "@aws-cdk/custom-resources": "1.45.0"
   }
 }

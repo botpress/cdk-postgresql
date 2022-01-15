@@ -1,9 +1,12 @@
-const AWS = require("aws-sdk");
-const format = require("pg-format");
-const secretsmanager = new AWS.SecretsManager();
-const { Client } = require("pg");
+import format from "pg-format";
 
-import { OnEventRequest } from "@aws-cdk/custom-resources/lib/provider-framework/types";
+import {
+  CloudFormationCustomResourceEvent,
+  CloudFormationCustomResourceCreateEvent,
+  CloudFormationCustomResourceUpdateEvent,
+  CloudFormationCustomResourceDeleteEvent,
+} from "aws-lambda/trigger/cloudformation-custom-resource";
+
 import {
   validateConnectionInfo,
   ConnectionInfo,
@@ -18,7 +21,7 @@ interface Props {
   Password: string;
 }
 
-export const roleHandler = async (event: OnEventRequest) => {
+export const roleHandler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.RequestType) {
     case "Create":
       return await handleCreate(event);
@@ -29,14 +32,14 @@ export const roleHandler = async (event: OnEventRequest) => {
   }
 };
 
-const handleCreate = async (event: OnEventRequest) => {
+const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   await createRole(props.ConnectionInfo, props.Name, props.Password);
   return { PhysicalResourceId: generatePhysicalId(props) };
 };
 
-const handleUpdate = async (event: OnEventRequest) => {
+const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
 
@@ -61,7 +64,7 @@ const handleUpdate = async (event: OnEventRequest) => {
   return { PhysicalResourceId: physicalResourceId };
 };
 
-const handleDelete = async (event: OnEventRequest) => {
+const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   await deleteRole(props.ConnectionInfo, props.Name);

@@ -1,4 +1,4 @@
-const format = require("pg-format");
+import format from "pg-format";
 import {
   ConnectionInfo,
   createClient,
@@ -6,7 +6,12 @@ import {
   hashCode,
 } from "./util";
 
-import { OnEventRequest } from "@aws-cdk/custom-resources/lib/provider-framework/types";
+import {
+  CloudFormationCustomResourceEvent,
+  CloudFormationCustomResourceCreateEvent,
+  CloudFormationCustomResourceUpdateEvent,
+  CloudFormationCustomResourceDeleteEvent,
+} from "aws-lambda/trigger/cloudformation-custom-resource";
 
 interface Props {
   ServiceToken: string;
@@ -15,7 +20,7 @@ interface Props {
   Owner: string;
 }
 
-export const databaseHandler = async (event: OnEventRequest) => {
+export const handler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.RequestType) {
     case "Create":
       return await handleCreate(event);
@@ -32,14 +37,14 @@ const generatePhysicalId = (props: Props): string => {
   return `${props.Name}-${suffix}`;
 };
 
-const handleCreate = async (event: OnEventRequest) => {
+const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   await createDatabase(props.ConnectionInfo, props.Name, props.Owner);
   return { PhysicalResourceId: generatePhysicalId(props) };
 };
 
-const handleUpdate = async (event: OnEventRequest) => {
+const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   const oldProps = event.OldResourceProperties as Props;
@@ -59,7 +64,7 @@ const handleUpdate = async (event: OnEventRequest) => {
   return { PhysicalResourceId: physicalResourceId };
 };
 
-const handleDelete = async (event: OnEventRequest) => {
+const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   await deleteDatabase(props.ConnectionInfo, props.Name, props.Owner);
