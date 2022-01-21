@@ -2,9 +2,12 @@ import { Stack, StackProps } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
-import { Database } from "@botpress/cdk-postgresql";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
-export class MyappStack extends Stack {
+export class ClusterStack extends Stack {
+  public readonly cluster: rds.IDatabaseCluster;
+  public readonly secret: secretsmanager.ISecret;
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
@@ -25,15 +28,11 @@ export class MyappStack extends Stack {
       "Open to the world"
     );
 
-    // const db = new Database(this, "DB", {
-    //   connectionInfo: {
-    //     host: cluster.clusterEndpoint.hostname,
-    //     port: cluster.clusterEndpoint.port,
-    //     username: "admin",
-    //     password: cluster.secret?.secretValue.toString(),
-    //   },
-    //   name: "the_database_name",
-    //   owner: "the_database_owner",
-    // });
+    this.cluster = cluster;
+    if (cluster.secret) {
+      this.secret = cluster.secret;
+    } else {
+      throw new Error("cluster should have secret");
+    }
   }
 }

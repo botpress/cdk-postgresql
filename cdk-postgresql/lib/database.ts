@@ -3,6 +3,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { Connection } from "./connection";
+import * as path from "path";
 
 export interface DatabaseProps {
   /**
@@ -28,7 +29,11 @@ export class Database extends Construct {
     const { connection } = props;
 
     const handler = new lambda.NodejsFunction(this, "OnEventHandler", {
-      entry: "lib/lambda/database.ts",
+      entry: path.join(__dirname, "lambda", "lib", "database.ts"),
+      depsLockFilePath: path.join(__dirname, "lambda", "package-lock.json"),
+      bundling: {
+        nodeModules: ["pg", "pg-format"],
+      },
       logRetention: logs.RetentionDays.ONE_MONTH,
       timeout: cdk.Duration.seconds(30),
       vpc: connection.vpc,
