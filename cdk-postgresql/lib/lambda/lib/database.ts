@@ -1,10 +1,5 @@
 import format from "pg-format";
-import {
-  ConnectionInfo,
-  createClient,
-  validateConnectionInfo,
-  hashCode,
-} from "./util";
+import { Connection, createClient, validateConnection, hashCode } from "./util";
 
 import {
   CloudFormationCustomResourceEvent,
@@ -15,7 +10,7 @@ import {
 
 interface Props {
   ServiceToken: string;
-  ConnectionInfo: ConnectionInfo;
+  Connection: Connection;
   Name: string;
   Owner: string;
 }
@@ -32,7 +27,7 @@ export const handler = async (event: CloudFormationCustomResourceEvent) => {
 };
 
 const generatePhysicalId = (props: Props): string => {
-  const { Host, Port } = props.ConnectionInfo;
+  const { Host, Port } = props.Connection;
   const suffix = Math.abs(hashCode(`${Host}-${Port}`));
   return `${props.Name}-${suffix}`;
 };
@@ -40,7 +35,7 @@ const generatePhysicalId = (props: Props): string => {
 const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await createDatabase(props.ConnectionInfo, props.Name, props.Owner);
+  await createDatabase(props.Connection, props.Name, props.Owner);
   return { PhysicalResourceId: generatePhysicalId(props) };
 };
 
@@ -53,12 +48,12 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const physicalResourceId = generatePhysicalId(props);
 
   if (physicalResourceId != oldPhysicalResourceId) {
-    await createDatabase(props.ConnectionInfo, props.Name, props.Owner);
+    await createDatabase(props.Connection, props.Name, props.Owner);
     return { PhysicalResourceId: physicalResourceId };
   }
 
   if (props.Owner != oldProps.Owner) {
-    await updateDbOwner(props.ConnectionInfo, props.Name, props.Owner);
+    await updateDbOwner(props.Connection, props.Name, props.Owner);
   }
 
   return { PhysicalResourceId: physicalResourceId };
@@ -67,15 +62,15 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
 const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await deleteDatabase(props.ConnectionInfo, props.Name, props.Owner);
+  await deleteDatabase(props.Connection, props.Name, props.Owner);
   return {};
 };
 
 const validateProps = (props: Props) => {
-  if (!("ConnectionInfo" in props)) {
-    throw "ConnectionInfo property is required";
+  if (!("Connection" in props)) {
+    throw "Connection property is required";
   }
-  validateConnectionInfo(props.ConnectionInfo);
+  validateConnection(props.Connection);
 
   if (!("Name" in props)) {
     throw "Name property is required";
@@ -86,27 +81,27 @@ const validateProps = (props: Props) => {
 };
 
 export const createDatabase = async (
-  connectionInfo: ConnectionInfo,
+  connection: Connection,
   name: string,
   owner: string
 ) => {
   console.log("Creating database", name);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
-  await client.query(format("GRANT %I TO %I", owner, connectionInfo.Username));
+  await client.query(format("GRANT %I TO %I", owner, connection.Username));
   await client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
   await client.end();
   console.log("Created database");
 };
 
 export const deleteDatabase = async (
-  connectionInfo: ConnectionInfo,
+  connection: Connection,
   name: string,
   owner: string
 ) => {
   console.log("Deleting database", name);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   // First, drop all remaining DB connections
@@ -119,19 +114,17 @@ export const deleteDatabase = async (
   );
   // Then, drop the DB
   await client.query(format("DROP DATABASE %I", name));
-  await client.query(
-    format("REVOKE %I FROM %I", owner, connectionInfo.Username)
-  );
+  await client.query(format("REVOKE %I FROM %I", owner, connection.Username));
   await client.end();
 };
 
 export const updateDbOwner = async (
-  connectionInfo: ConnectionInfo,
+  connection: Connection,
   name: string,
   owner: string
 ) => {
   console.log(`Updating DB ${name} owner to ${owner}`);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));

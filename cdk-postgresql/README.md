@@ -14,7 +14,7 @@
 import { Database } from "@botpress/cdk-postgresql";
 
 const db = new Database(this, "DB", {
-  connectionInfo: {
+  connection: {
     host: "yourdb.somedomain.com",
     port: 5432,
     username: "master",
@@ -31,7 +31,7 @@ const db = new Database(this, "DB", {
 import { Role } from "@botpress/cdk-postgresql";
 
 const role = new Role(this, "DB", {
-  connectionInfo: {
+  connection: {
     host: "yourdb.somedomain.com",
     port: 5432,
     username: "master",
@@ -55,7 +55,7 @@ const provider = new Provider(this, "Provider", {
 });
 
 const db = new Database(this, "DB", {
-  connectionInfo: {
+  connection: {
     host: "yourdb.somedomain.com",
     port: 5432,
     username: "master",

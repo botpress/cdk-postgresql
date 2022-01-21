@@ -7,16 +7,11 @@ import {
   CloudFormationCustomResourceDeleteEvent,
 } from "aws-lambda/trigger/cloudformation-custom-resource";
 
-import {
-  validateConnectionInfo,
-  ConnectionInfo,
-  hashCode,
-  createClient,
-} from "./util";
+import { validateconnection, connection, hashCode, createClient } from "./util";
 
 interface Props {
   ServiceToken: string;
-  ConnectionInfo: ConnectionInfo;
+  connection: connection;
   Name: string;
   Password: string;
 }
@@ -35,7 +30,7 @@ export const roleHandler = async (event: CloudFormationCustomResourceEvent) => {
 const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await createRole(props.ConnectionInfo, props.Name, props.Password);
+  await createRole(props.connection, props.Name, props.Password);
   return { PhysicalResourceId: generatePhysicalId(props) };
 };
 
@@ -49,16 +44,16 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const physicalResourceId = generatePhysicalId(props);
 
   if (physicalResourceId != oldPhysicalResourceId) {
-    await createRole(props.ConnectionInfo, props.Name, props.Password);
+    await createRole(props.connection, props.Name, props.Password);
     return { PhysicalResourceId: physicalResourceId };
   }
 
   if (props.Name != oldProps.Name) {
-    await updateRoleName(props.ConnectionInfo, oldProps.Name, props.Name);
+    await updateRoleName(props.connection, oldProps.Name, props.Name);
   }
 
   if (props.Password != oldProps.Password) {
-    await updateRolePassword(props.ConnectionInfo, props.Name, props.Password);
+    await updateRolePassword(props.connection, props.Name, props.Password);
   }
 
   return { PhysicalResourceId: physicalResourceId };
@@ -67,15 +62,15 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
 const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await deleteRole(props.ConnectionInfo, props.Name);
+  await deleteRole(props.connection, props.Name);
   return {};
 };
 
 const validateProps = (props: Props) => {
-  if (!("ConnectionInfo" in props)) {
-    throw "ConnectionInfo property is required";
+  if (!("connection" in props)) {
+    throw "connection property is required";
   }
-  validateConnectionInfo(props.ConnectionInfo);
+  validateconnection(props.connection);
 
   if (!("Name" in props)) {
     throw "Name property is required";
@@ -86,17 +81,14 @@ const validateProps = (props: Props) => {
 };
 
 const generatePhysicalId = (props: Props): string => {
-  const { Host, Port } = props.ConnectionInfo;
+  const { Host, Port } = props.connection;
   const suffix = Math.abs(hashCode(`${Host}-${Port}`));
   return `role-${suffix}`;
 };
 
-export const deleteRole = async (
-  connectionInfo: ConnectionInfo,
-  name: string
-) => {
+export const deleteRole = async (connection: connection, name: string) => {
   console.log("Deleting user", name);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   await client.query(format("DROP USER %I", name));
@@ -104,12 +96,12 @@ export const deleteRole = async (
 };
 
 export const updateRoleName = async (
-  connectionInfo: ConnectionInfo,
+  connection: connection,
   oldName: string,
   newName: string
 ) => {
   console.log(`Updating role name from ${oldName} to ${newName}`);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   await client.query(format("ALTER ROLE %I RENAME TO %I", oldName, newName));
@@ -117,12 +109,12 @@ export const updateRoleName = async (
 };
 
 export const updateRolePassword = async (
-  connectionInfo: ConnectionInfo,
+  connection: connection,
   name: string,
   password: string
 ) => {
   console.log("Updating user password", name);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   await client.query(format("ALTER USER %I WITH PASSWORD %L", name, password));
@@ -130,12 +122,12 @@ export const updateRolePassword = async (
 };
 
 export const createRole = async (
-  connectionInfo: ConnectionInfo,
+  connection: connection,
   name: string,
   password: string
 ) => {
   console.log("Creating user", name);
-  const client = createClient(connectionInfo);
+  const client = createClient(connection);
   await client.connect();
 
   await client.query(format("CREATE USER %I WITH PASSWORD %L", name, password));

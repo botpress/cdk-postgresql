@@ -1,6 +1,6 @@
 import { Client, ClientConfig } from "pg";
 
-export interface ConnectionInfo {
+export interface Connection {
   Host: string;
   Port: number;
   Username: string;
@@ -9,16 +9,16 @@ export interface ConnectionInfo {
   SSLMode: "require" | "disable";
 }
 
-export const createClient = (connectionInfo: ConnectionInfo) => {
+export const createClient = (connection: Connection) => {
   const clientProps: ClientConfig = {
-    host: connectionInfo.Host,
-    port: connectionInfo.Port,
-    user: connectionInfo.Username,
-    password: connectionInfo.Password,
-    database: connectionInfo.Database,
+    host: connection.Host,
+    port: connection.Port,
+    user: connection.Username,
+    password: connection.Password,
+    database: connection.Database,
   };
 
-  if (connectionInfo.SSLMode === "require") {
+  if (connection.SSLMode === "require") {
     clientProps.ssl = {
       rejectUnauthorized: false,
     };
@@ -27,18 +27,18 @@ export const createClient = (connectionInfo: ConnectionInfo) => {
   return new Client(clientProps);
 };
 
-export const validateConnectionInfo = (connectionInfo: ConnectionInfo) => {
-  if (!("Host" in connectionInfo)) {
-    throw "ConnectionInfo.Host property is required";
+export const validateConnection = (connection: Connection) => {
+  if (!("Host" in connection)) {
+    throw "Connection.Host property is required";
   }
-  if (!("Port" in connectionInfo)) {
-    throw "ConnectionInfo.Port property is required";
+  if (!("Port" in connection)) {
+    throw "Connection.Port property is required";
   }
-  if (!("Database" in connectionInfo)) {
-    throw "ConnectionInfo.Database property is required";
+  if (!("Database" in connection)) {
+    throw "Connection.Database property is required";
   }
-  if (!("Username" in connectionInfo)) {
-    throw "ConnectionInfo.Username property is required";
+  if (!("Username" in connection)) {
+    throw "Connection.Username property is required";
   }
 };
 
