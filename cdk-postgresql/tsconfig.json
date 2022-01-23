@@ -18,5 +18,5 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false
   },
-  "exclude": ["cdk.out", "lib/lambda"]
+  "exclude": ["cdk.out"]
 }
