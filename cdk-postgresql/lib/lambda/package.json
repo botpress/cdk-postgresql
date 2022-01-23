@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "aws-sdk": "^2.926.0",
+    "@aws-sdk/client-secrets-manager": "3.47.2",
     "pg": "8.0.3",
     "pg-format": "1.0.4"
   },

@@ -1,4 +1,5 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export interface Connection {
   /**
@@ -28,7 +29,12 @@ export interface Connection {
   /**
    * Password for the server connection
    */
-  password?: string;
+  password: secretsmanager.ISecret;
+
+  /**
+   * Field to get from the password, in case the password is a object
+   */
+  passwordField?: string;
 
   /**
    * Set the priority for an SSL connection to the server

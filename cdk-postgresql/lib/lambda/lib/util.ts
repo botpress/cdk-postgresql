@@ -1,22 +1,42 @@
+import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client, ClientConfig } from "pg";
+
+const secretsmanager = new SecretsManager({});
 
 export interface Connection {
   Host: string;
   Port: number;
   Username: string;
-  Password: string;
+  PasswordArn: string;
+  PasswordField?: string;
   Database: string;
   SSLMode: "require" | "disable";
 }
 
-export const createClient = (connection: Connection) => {
+export const createClient = async (connection: Connection) => {
+  console.debug(
+    `creating PG client with connection: ${JSON.stringify(connection)}`
+  );
+
+  const { SecretString } = await secretsmanager.getSecretValue({
+    SecretId: connection.PasswordArn,
+  });
+
+  console.debug({ SecretString });
+
+  const password = connection.PasswordField
+    ? SecretString[connection.PasswordField]
+    : SecretString;
+
   const clientProps: ClientConfig = {
     host: connection.Host,
     port: connection.Port,
     user: connection.Username,
-    password: connection.Password,
+    password,
     database: connection.Database,
   };
+
+  console.debug(`clientProps: ${JSON.stringify(clientProps)}`);
 
   if (connection.SSLMode === "require") {
     clientProps.ssl = {
@@ -39,6 +59,9 @@ export const validateConnection = (connection: Connection) => {
   }
   if (!("Username" in connection)) {
     throw "Connection.Username property is required";
+  }
+  if (!("PasswordArn" in connection)) {
+    throw "Connection.PasswordArn property is required";
   }
 };
 

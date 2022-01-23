@@ -41,6 +41,8 @@ export class Database extends Construct {
       securityGroups: connection.securityGroups,
     });
 
+    connection.password.grantRead(handler);
+
     new cdk.CustomResource(this, "CustomResource", {
       serviceToken: handler.functionArn,
       resourceType: "Custom::Postgresql-Database",
@@ -50,7 +52,8 @@ export class Database extends Construct {
           Port: connection.port || 5432,
           Database: connection.database || "postgres",
           Username: connection.username,
-          Password: connection.password || "",
+          PasswordArn: connection.password.secretArn,
+          PasswordField: connection.passwordField,
           SSLMode: connection.sslMode || "require",
         },
         name: props.name,

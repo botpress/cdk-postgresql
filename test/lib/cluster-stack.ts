@@ -21,6 +21,7 @@ export class ClusterStack extends Stack {
         vpc,
         // public so we can reach it over the internet for testing
         vpcSubnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
+        publiclyAccessible: true,
       },
     });
     cluster.connections.allowFromAnyIpv4(

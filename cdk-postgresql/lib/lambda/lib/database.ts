@@ -86,7 +86,7 @@ export const createDatabase = async (
   owner: string
 ) => {
   console.log("Creating database", name);
-  const client = createClient(connection);
+  const client = await createClient(connection);
   await client.connect();
 
   await client.query(format("GRANT %I TO %I", owner, connection.Username));
@@ -101,7 +101,7 @@ export const deleteDatabase = async (
   owner: string
 ) => {
   console.log("Deleting database", name);
-  const client = createClient(connection);
+  const client = await createClient(connection);
   await client.connect();
 
   // First, drop all remaining DB connections
@@ -124,7 +124,7 @@ export const updateDbOwner = async (
   owner: string
 ) => {
   console.log(`Updating DB ${name} owner to ${owner}`);
-  const client = createClient(connection);
+  const client = await createClient(connection);
   await client.connect();
 
   await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));

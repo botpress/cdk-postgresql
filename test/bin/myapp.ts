@@ -6,4 +6,4 @@ import { AppStack } from "../lib/app-stack";
 
 const app = new cdk.App();
 const { cluster, secret } = new ClusterStack(app, "PGTest");
-new AppStack(app, "AppStack", { cluster, secret });
+new AppStack(app, "AppStack8", { cluster, secret });
