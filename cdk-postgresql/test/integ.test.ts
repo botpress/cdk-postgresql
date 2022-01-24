@@ -8,12 +8,13 @@ import {
   CreateRoleEvent,
   DeleteDatabaseEvent,
   DeleteRoleEvent,
+  UpdateDatabaseEvent,
   UpdateRoleEvent,
 } from "../lib/lambda.types";
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client } from "pg";
 import { createDatabase, createRole } from "../lib/postgres";
-import { createSecret, dbExists, roleExists } from "./helpers";
+import { createSecret, dbExists, getDbOwner, roleExists } from "./helpers";
 import { secretsmanager } from "../lib/util";
 
 const DB_PORT = 5432;
@@ -115,8 +116,6 @@ describe("role", () => {
       name: newRoleName,
       password: newRolePwd,
     });
-
-    // const rolePasswordArn = await createSecret(secretsManager, newRolePwd);
 
     const event: DeleteRoleEvent = {
       RequestType: "Delete",
@@ -315,6 +314,80 @@ describe("database", () => {
 
     console.log("checking if db exists");
     expect(await dbExists(masterClient, newDbName)).toEqual(false);
+    await masterClient.end();
+  });
+
+  test("update db owner", async () => {
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const newDbName = "mydb";
+    const newDbRole = "myrole";
+    const updatedDbRole = newDbRole + "updated";
+
+    await createRole({
+      client: masterClient,
+      name: newDbRole,
+      password: "12345",
+    });
+
+    await createRole({
+      client: masterClient,
+      name: updatedDbRole,
+      password: "12345",
+    });
+
+    await createDatabase({
+      client: masterClient,
+      name: newDbName,
+      owner: newDbRole,
+    });
+
+    const event: UpdateDatabaseEvent = {
+      RequestType: "Update",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: newDbName,
+        Owner: updatedDbRole,
+      },
+      OldResourceProperties: {
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: newDbName,
+        Owner: newDbRole,
+      },
+    };
+
+    await dbHandler(event);
+
+    expect(await getDbOwner(masterClient, newDbName)).toEqual(updatedDbRole);
     await masterClient.end();
   });
 });

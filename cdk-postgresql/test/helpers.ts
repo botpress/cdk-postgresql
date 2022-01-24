@@ -54,3 +54,17 @@ export const createSecret = async (
 
   return response.ARN;
 };
+
+export const getDbOwner = async (
+  client: Client,
+  db: string
+): Promise<string> => {
+  const { rows } = await client.query(
+    `SELECT d.datname as dbname, pg_catalog.pg_get_userbyid(d.datdba) as owner FROM pg_catalog.pg_database d WHERE d.datname = '${db}' ORDER BY 1`
+  );
+  const dbRow = rows.find((r) => r.dbname === db);
+  if (dbRow === undefined) {
+    throw new Error(`could not find db with name ${db}`);
+  }
+  return dbRow.owner;
+};
