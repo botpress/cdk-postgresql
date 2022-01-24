@@ -1,17 +1,8 @@
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client, ClientConfig } from "pg";
+import { Connection } from "./lambda.types";
 
 const secretsmanager = new SecretsManager({});
-
-export interface Connection {
-  Host: string;
-  Port: number;
-  Username: string;
-  PasswordArn: string;
-  PasswordField?: string;
-  Database: string;
-  SSLMode: "require" | "disable";
-}
 
 const isObject = (obj: any): obj is object => {
   return typeof obj === "object" && !Array.isArray(obj) && obj !== null;
