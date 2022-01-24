@@ -12,11 +12,8 @@ const isObject = (obj: any): obj is object => {
 
 export const createClient = async (connection: Connection) => {
   console.debug(
-    `creating SPG PG client with connection: ${JSON.stringify(connection)}`
+    `creating PG client with connection: ${JSON.stringify(connection)}`
   );
-  console.log("LOL SPG");
-  console.log({ secretsmanager });
-  console.log({ endpoint: await secretsmanager.config.endpoint() });
 
   const { SecretString } = await secretsmanager.getSecretValue({
     SecretId: connection.PasswordArn,
@@ -24,10 +21,6 @@ export const createClient = async (connection: Connection) => {
   if (!SecretString) {
     throw new Error(`cannot find secret with arn ${connection.PasswordArn}`);
   }
-
-  console.debug({ SecretString });
-
-  // if(iso)
 
   let password;
   if (isObject(SecretString) && connection.PasswordField) {

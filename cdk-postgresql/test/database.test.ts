@@ -6,6 +6,7 @@ import { CreateDatabaseEvent } from "../lib/lambda.types";
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 
 const DB_PORT = 5432;
+const DB_MASTER_PASSWORD = "masterpwd";
 
 describe("database", () => {
   let pgContainer: StartedTestContainer;
@@ -14,7 +15,7 @@ describe("database", () => {
   beforeAll(async () => {
     pgContainer = await new GenericContainer("postgres")
       .withExposedPorts(DB_PORT)
-      .withEnv("POSTGRES_PASSWORD", "postgres")
+      .withEnv("POSTGRES_PASSWORD", DB_MASTER_PASSWORD)
       .start();
     localstackContainer = await new GenericContainer("localstack/localstack")
       .withEnv("SERVICES", "secretsmanager")
@@ -31,23 +32,18 @@ describe("database", () => {
     const endpoint = `http://localhost:${localstackContainer.getMappedPort(
       4566
     )}`;
-    // process.env.TEST_AWS_ENDPOINT = endpoint;
-    console.log({ endpoint });
     const secretsManager = new SecretsManager({
       endpoint,
     });
-    console.log({ utilModule });
     utilModule.secretsmanager = secretsManager;
-    console.log({ port: localstackContainer.getMappedPort(4566) });
     const { ARN } = await secretsManager.createSecret({
-      SecretString: "hello",
-      Name: "lol",
+      SecretString: DB_MASTER_PASSWORD,
+      Name: "/db/masterpwd",
     });
     if (!ARN) {
       throw "ARN undefined";
     }
 
-    console.log({ ARN });
     const event: CreateDatabaseEvent = {
       RequestType: "Create",
       ServiceToken: "",

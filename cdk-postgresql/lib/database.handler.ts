@@ -90,7 +90,7 @@ export const createDatabase = async (
   const client = await createClient(connection);
   await client.connect();
 
-  await client.query(format("GRANT %I TO %I", owner, connection.Username));
+  // await client.query(format("GRANT %I TO %I", owner, connection.Username));
   await client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
   await client.end();
   console.log("Created database");
