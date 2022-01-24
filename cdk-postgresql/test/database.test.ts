@@ -1,4 +1,5 @@
 import { handler } from "../lib/database.handler";
+const utilModule = require("../lib/util");
 import { GenericContainer, StartedTestContainer } from "testcontainers";
 import ms from "ms";
 import { CreateDatabaseEvent } from "../lib/lambda.types";
@@ -35,6 +36,8 @@ describe("database", () => {
     const secretsManager = new SecretsManager({
       endpoint,
     });
+    console.log({ utilModule });
+    utilModule.secretsmanager = secretsManager;
     console.log({ port: localstackContainer.getMappedPort(4566) });
     const { ARN } = await secretsManager.createSecret({
       SecretString: "hello",

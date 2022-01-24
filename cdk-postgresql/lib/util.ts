@@ -2,7 +2,7 @@ import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client, ClientConfig } from "pg";
 import { Connection } from "./lambda.types";
 
-const secretsmanager = new SecretsManager({
+export const secretsmanager = new SecretsManager({
   endpoint: process.env.TEST_AWS_ENDPOINT,
 });
 
@@ -12,8 +12,11 @@ const isObject = (obj: any): obj is object => {
 
 export const createClient = async (connection: Connection) => {
   console.debug(
-    `creating PG client with connection: ${JSON.stringify(connection)}`
+    `creating SPG PG client with connection: ${JSON.stringify(connection)}`
   );
+  console.log("LOL SPG");
+  console.log({ secretsmanager });
+  console.log({ endpoint: await secretsmanager.config.endpoint() });
 
   const { SecretString } = await secretsmanager.getSecretValue({
     SecretId: connection.PasswordArn,
