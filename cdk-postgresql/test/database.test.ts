@@ -31,69 +31,65 @@ describe("database", () => {
     await localstackContainer.stop();
   });
 
-  test(
-    "create",
-    async () => {
-      const endpoint = `http://localhost:${localstackContainer.getMappedPort(
-        4566
-      )}`;
-      const secretsManager = new SecretsManager({
-        endpoint,
-      });
-      utilModule.secretsmanager = secretsManager;
-      const { ARN } = await secretsManager.createSecret({
-        SecretString: DB_MASTER_PASSWORD,
-        Name: "/db/masterpwd",
-      });
-      if (!ARN) {
-        throw "ARN undefined";
-      }
+  test("create", async () => {
+    const endpoint = `http://localhost:${localstackContainer.getMappedPort(
+      4566
+    )}`;
+    const secretsManager = new SecretsManager({
+      endpoint,
+    });
+    utilModule.secretsmanager = secretsManager;
+    const { ARN } = await secretsManager.createSecret({
+      SecretString: DB_MASTER_PASSWORD,
+      Name: "/db/masterpwd",
+    });
+    if (!ARN) {
+      throw "ARN undefined";
+    }
 
-      const pgHost = pgContainer.getHost();
-      const pgPort = pgContainer.getMappedPort(DB_PORT);
-      const newDbName = "mydb";
+    const pgHost = pgContainer.getHost();
+    const pgPort = pgContainer.getMappedPort(DB_PORT);
+    const newDbName = "mydb";
 
-      const event: CreateDatabaseEvent = {
-        RequestType: "Create",
+    const event: CreateDatabaseEvent = {
+      RequestType: "Create",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      ResourceType: "",
+      ResourceProperties: {
         ServiceToken: "",
-        ResponseURL: "",
-        StackId: "",
-        RequestId: "",
-        LogicalResourceId: "",
-        ResourceType: "",
-        ResourceProperties: {
-          ServiceToken: "",
-          Connection: {
-            Host: pgHost,
-            Port: pgPort,
-            Username: DB_MASTER_USERNAME,
-            Database: DB_DEFAULT_DB,
-            PasswordArn: ARN,
-            SSLMode: "disable",
-          },
-          Name: newDbName,
-          Owner: "postgres",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: ARN,
+          SSLMode: "disable",
         },
-      };
-      await handler(event);
+        Name: newDbName,
+        Owner: "postgres",
+      },
+    };
+    await handler(event);
 
-      const client = new Client({
-        host: pgHost,
-        port: pgPort,
-        database: DB_DEFAULT_DB,
-        user: DB_MASTER_USERNAME,
-        password: DB_MASTER_PASSWORD,
-      });
-      await client.connect();
+    const client = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await client.connect();
 
-      console.debug("querying DB for results");
-      const { rows } = await client.query(
-        `SELECT datname FROM pg_database WHERE datistemplate = false;`
-      );
-      await client.end();
+    console.debug("querying DB for results");
+    const { rows } = await client.query(
+      `SELECT datname FROM pg_database WHERE datistemplate = false;`
+    );
+    await client.end();
 
-      expect(rows.find((r) => r.datname === newDbName)).not.toBeUndefined();
-    },
-    ms("10m")
-  );
+    expect(rows.find((r) => r.datname === newDbName)).not.toBeUndefined();
+  });
 });
