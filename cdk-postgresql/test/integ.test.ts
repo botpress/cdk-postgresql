@@ -12,7 +12,7 @@ import {
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client } from "pg";
 import { createDatabase, createRole } from "../lib/postgres";
-import { dbExists, getDatabases, getRoles } from "./helpers";
+import { dbExists, roleExists } from "./helpers";
 
 const DB_PORT = 5432;
 const DB_MASTER_USERNAME = "postgres";
@@ -164,9 +164,7 @@ describe("role", () => {
 
     await roleHandler(event);
 
-    // make sure role does not exist anymore
-    const roles = await getRoles(masterClient);
-    expect(roles.find((r) => r === newRoleName)).toBeUndefined();
+    expect(await roleExists(masterClient, newRoleName)).toEqual(false);
 
     await masterClient.end();
   });
