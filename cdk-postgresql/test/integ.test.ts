@@ -1,5 +1,5 @@
 import { handler as dbHandler } from "../lib/database.handler";
-import { handler as roleHandler } from "../lib/role.handler";
+import { handler as roleHandler, updateRoleName } from "../lib/role.handler";
 const utilModule = require("../lib/util");
 import { GenericContainer, StartedTestContainer } from "testcontainers";
 import ms from "ms";
@@ -8,11 +8,13 @@ import {
   CreateRoleEvent,
   DeleteDatabaseEvent,
   DeleteRoleEvent,
+  UpdateRoleEvent,
 } from "../lib/lambda.types";
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client } from "pg";
 import { createDatabase, createRole } from "../lib/postgres";
-import { dbExists, roleExists } from "./helpers";
+import { createSecret, dbExists, roleExists } from "./helpers";
+import { secretsmanager } from "../lib/util";
 
 const DB_PORT = 5432;
 const DB_MASTER_USERNAME = "postgres";
@@ -39,21 +41,11 @@ beforeEach(async () => {
   pgHost = pgContainer.getHost();
   pgPort = pgContainer.getMappedPort(DB_PORT);
 
-  const endpoint = `http://localhost:${localstackContainer.getMappedPort(
-    4566
-  )}`;
   secretsManager = new SecretsManager({
-    endpoint,
+    endpoint: `http://localhost:${localstackContainer.getMappedPort(4566)}`,
   });
   utilModule.secretsmanager = secretsManager;
-  const response = await secretsManager.createSecret({
-    SecretString: DB_MASTER_PASSWORD,
-    Name: "/db/masterpwd",
-  });
-  if (!response.ARN) {
-    throw "failed creating master password in SecretsManager";
-  }
-  masterPasswordArn = response.ARN;
+  masterPasswordArn = await createSecret(secretsmanager, DB_MASTER_PASSWORD);
 }, ms("2m"));
 
 afterEach(async () => {
@@ -64,13 +56,7 @@ afterEach(async () => {
 describe("role", () => {
   test("create", async () => {
     const newRolePwd = "rolepwd";
-    const { ARN: rolePasswordArn } = await secretsManager.createSecret({
-      SecretString: newRolePwd,
-      Name: "/db/rolepwd",
-    });
-    if (!rolePasswordArn) {
-      throw "rolePasswordArn undefined";
-    }
+    const rolePasswordArn = await createSecret(secretsmanager, newRolePwd);
 
     const newRoleName = "myuser";
 
@@ -130,13 +116,7 @@ describe("role", () => {
       password: newRolePwd,
     });
 
-    const { ARN: rolePasswordArn } = await secretsManager.createSecret({
-      SecretString: newRolePwd,
-      Name: "/db/rolepwd",
-    });
-    if (!rolePasswordArn) {
-      throw "rolePasswordArn undefined";
-    }
+    // const rolePasswordArn = await createSecret(secretsManager, newRolePwd);
 
     const event: DeleteRoleEvent = {
       RequestType: "Delete",
@@ -158,7 +138,7 @@ describe("role", () => {
           SSLMode: "disable",
         },
         Name: newRoleName,
-        PasswordArn: "",
+        PasswordArn: "", // can be empty for tests
       },
     };
 
@@ -166,6 +146,84 @@ describe("role", () => {
 
     expect(await roleExists(masterClient, newRoleName)).toEqual(false);
 
+    await masterClient.end();
+  });
+
+  test("update", async () => {
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const roleName = "myuser";
+    const rolePwd = "rolepwd";
+    await createRole({
+      client: masterClient,
+      name: roleName,
+      password: rolePwd,
+    });
+
+    const updatedRoleName = roleName + "updated";
+    const updatedRolePwd = rolePwd + "updated";
+
+    const updatedRolePwdArn = await createSecret(
+      secretsManager,
+      updatedRolePwd
+    );
+
+    const event: UpdateRoleEvent = {
+      RequestType: "Update",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: updatedRoleName,
+        PasswordArn: updatedRolePwdArn,
+      },
+      OldResourceProperties: {
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: roleName,
+        PasswordArn: "", // can be empty for tests
+      },
+    };
+
+    await roleHandler(event);
+
+    // try connecting as the updated role
+    const client = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: updatedRoleName,
+      password: updatedRolePwd,
+    });
+    await client.connect();
+
+    await client.end();
     await masterClient.end();
   });
 });
