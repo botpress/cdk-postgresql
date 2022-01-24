@@ -1,9 +1,5 @@
 import format from "pg-format";
 
-import { SecretsManager } from "@aws-sdk/client-secrets-manager";
-
-const secretsmanager = new SecretsManager({});
-
 import {
   CloudFormationCustomResourceEvent,
   CloudFormationCustomResourceCreateEvent,
@@ -11,17 +7,22 @@ import {
   CloudFormationCustomResourceDeleteEvent,
 } from "aws-lambda/trigger/cloudformation-custom-resource";
 
-import { validateConnection, hashCode, createClient } from "./util";
+import {
+  validateConnection,
+  hashCode,
+  createClient,
+  secretsmanager,
+} from "./util";
 import { Connection } from "./lambda.types";
 
 interface Props {
   ServiceToken: string;
-  connection: Connection;
+  Connection: Connection;
   Name: string;
   PasswordArn: string;
 }
 
-export const roleHandler = async (event: CloudFormationCustomResourceEvent) => {
+export const handler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.RequestType) {
     case "Create":
       return await handleCreate(event);
@@ -36,7 +37,7 @@ const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   await createRole({
-    connection: props.connection,
+    connection: props.Connection,
     name: props.Name,
     passwordArn: props.PasswordArn,
   });
@@ -54,7 +55,7 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
 
   if (physicalResourceId != oldPhysicalResourceId) {
     await createRole({
-      connection: props.connection,
+      connection: props.Connection,
       name: props.Name,
       passwordArn: props.PasswordArn,
     });
@@ -62,12 +63,12 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   }
 
   if (props.Name != oldProps.Name) {
-    await updateRoleName(props.connection, oldProps.Name, props.Name);
+    await updateRoleName(props.Connection, oldProps.Name, props.Name);
   }
 
   if (props.PasswordArn != oldProps.PasswordArn) {
     await updateRolePassword({
-      connection: props.connection,
+      connection: props.Connection,
       name: props.Name,
       passwordArn: props.PasswordArn,
     });
@@ -79,15 +80,15 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
 const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await deleteRole(props.connection, props.Name);
+  await deleteRole(props.Connection, props.Name);
   return {};
 };
 
 const validateProps = (props: Props) => {
-  if (!("connection" in props)) {
-    throw "connection property is required";
+  if (!("Connection" in props)) {
+    throw "Connection property is required";
   }
-  validateConnection(props.connection);
+  validateConnection(props.Connection);
 
   if (!("Name" in props)) {
     throw "Name property is required";
@@ -98,7 +99,7 @@ const validateProps = (props: Props) => {
 };
 
 const generatePhysicalId = (props: Props): string => {
-  const { Host, Port } = props.connection;
+  const { Host, Port } = props.Connection;
   const suffix = Math.abs(hashCode(`${Host}-${Port}`));
   return `role-${suffix}`;
 };

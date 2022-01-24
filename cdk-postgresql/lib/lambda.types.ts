@@ -19,3 +19,13 @@ export interface CreateDatabaseEvent
     Owner: string;
   };
 }
+
+export interface CreateRoleEvent
+  extends CloudFormationCustomResourceCreateEvent {
+  ResourceProperties: {
+    ServiceToken: string;
+    Connection: Connection;
+    Name: string;
+    PasswordArn: string;
+  };
+}
