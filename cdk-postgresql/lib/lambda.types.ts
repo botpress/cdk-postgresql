@@ -1,4 +1,7 @@
-import { CloudFormationCustomResourceCreateEvent } from "aws-lambda";
+import {
+  CloudFormationCustomResourceCreateEvent,
+  CloudFormationCustomResourceDeleteEvent,
+} from "aws-lambda";
 
 export interface Connection {
   Host: string;
@@ -22,6 +25,16 @@ export interface CreateDatabaseEvent
 
 export interface CreateRoleEvent
   extends CloudFormationCustomResourceCreateEvent {
+  ResourceProperties: {
+    ServiceToken: string;
+    Connection: Connection;
+    Name: string;
+    PasswordArn: string;
+  };
+}
+
+export interface DeleteRoleEvent
+  extends CloudFormationCustomResourceDeleteEvent {
   ResourceProperties: {
     ServiceToken: string;
     Connection: Connection;

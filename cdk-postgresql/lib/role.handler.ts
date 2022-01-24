@@ -14,6 +14,7 @@ import {
   secretsmanager,
 } from "./util";
 import { Connection } from "./lambda.types";
+import * as postgres from "./postgres";
 
 interface Props {
   ServiceToken: string;
@@ -158,7 +159,11 @@ export const createRole = async (props: {
   const { SecretString: password } = await secretsmanager.getSecretValue({
     SecretId: passwordArn,
   });
+  if (!password) {
+    throw new Error("could not decrypt password");
+  }
 
-  await client.query(format("CREATE USER %I WITH PASSWORD %L", name, password));
+  await postgres.createRole({ client, name, password });
+
   await client.end();
 };
