@@ -1,5 +1,5 @@
 import format from "pg-format";
-import { Connection, createClient, validateConnection, hashCode } from "./util";
+import { createClient, validateConnection, hashCode } from "./util";
 
 import {
   CloudFormationCustomResourceEvent,
@@ -7,6 +7,7 @@ import {
   CloudFormationCustomResourceUpdateEvent,
   CloudFormationCustomResourceDeleteEvent,
 } from "aws-lambda/trigger/cloudformation-custom-resource";
+import { Connection } from "./lambda.types";
 
 interface Props {
   ServiceToken: string;

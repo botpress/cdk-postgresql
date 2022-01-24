@@ -11,7 +11,8 @@ import {
   CloudFormationCustomResourceDeleteEvent,
 } from "aws-lambda/trigger/cloudformation-custom-resource";
 
-import { validateConnection, Connection, hashCode, createClient } from "./util";
+import { validateConnection, hashCode, createClient } from "./util";
+import { Connection } from "./lambda.types";
 
 interface Props {
   ServiceToken: string;
