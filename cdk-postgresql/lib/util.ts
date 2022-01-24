@@ -13,6 +13,10 @@ export interface Connection {
   SSLMode: "require" | "disable";
 }
 
+const isObject = (obj: any): obj is object => {
+  return typeof obj === "object" && !Array.isArray(obj) && obj !== null;
+};
+
 export const createClient = async (connection: Connection) => {
   console.debug(
     `creating PG client with connection: ${JSON.stringify(connection)}`
@@ -21,12 +25,20 @@ export const createClient = async (connection: Connection) => {
   const { SecretString } = await secretsmanager.getSecretValue({
     SecretId: connection.PasswordArn,
   });
+  if (!SecretString) {
+    throw new Error(`cannot find secret with arn ${connection.PasswordArn}`);
+  }
 
   console.debug({ SecretString });
 
-  const password = connection.PasswordField
-    ? SecretString[connection.PasswordField]
-    : SecretString;
+  // if(iso)
+
+  let password;
+  if (isObject(SecretString) && connection.PasswordField) {
+    password = SecretString[connection.PasswordField];
+  } else {
+    password = SecretString;
+  }
 
   const clientProps: ClientConfig = {
     host: connection.Host,

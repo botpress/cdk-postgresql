@@ -3,7 +3,6 @@ import { Connection } from "./connection";
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as path from "path";
 
 export interface RoleProps {
   /**
@@ -28,12 +27,7 @@ export class Role extends Construct {
 
     const { connection } = props;
 
-    const handler = new lambda.NodejsFunction(this, "OnEventHandler", {
-      entry: path.join(__dirname, "lambda", "lib", "role.ts"),
-      depsLockFilePath: path.join(__dirname, "lambda", "package-lock.json"),
-      bundling: {
-        nodeModules: ["pg", "pg-format"],
-      },
+    const handler = new lambda.NodejsFunction(this, "handler", {
       logRetention: logs.RetentionDays.ONE_MONTH,
       timeout: cdk.Duration.seconds(30),
       vpc: connection.vpc,

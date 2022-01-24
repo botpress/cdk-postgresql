@@ -1,4 +1,4 @@
-import { handler } from "../lib/lambda/lib/database";
+import { handler } from "../lib/database.handler";
 
 test("something", async () => {
   console.log({ handler });

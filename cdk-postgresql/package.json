@@ -4,6 +4,10 @@
   "description": "Postgresql constructs for AWS CDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "author": {
+    "name": "Botpress",
+    "url": "https://github.com/botpress"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/botpress/cdk-postgresql.git"
@@ -25,14 +29,17 @@
     "eslint": "6.2.0",
     "jest": "^27.4.7",
     "ts-jest": "^27.1.3",
-    "typescript": "4.5.4"
+    "typescript": "4.5.4",
+    "@types/pg": "7.14.3",
+    "@types/pg-format": "1.0.0",
+    "@types/aws-lambda": "8.10.89",
+    "@aws-cdk/custom-resources": "1.45.0"
   },
   "dependencies": {
     "@types/node": "17.0.8",
-    "esbuild": "^0.14.12"
-  },
-  "author": {
-    "name": "Botpress",
-    "url": "https://github.com/botpress"
+    "esbuild": "^0.14.12",
+    "@aws-sdk/client-secrets-manager": "3.47.2",
+    "pg": "8.0.3",
+    "pg-format": "1.0.4"
   }
 }

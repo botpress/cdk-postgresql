@@ -52,7 +52,11 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const physicalResourceId = generatePhysicalId(props);
 
   if (physicalResourceId != oldPhysicalResourceId) {
-    await createRole({connection: props.connection, name: props.Name, passwordArn: props.PasswordArn);
+    await createRole({
+      connection: props.connection,
+      name: props.Name,
+      passwordArn: props.PasswordArn,
+    });
     return { PhysicalResourceId: physicalResourceId };
   }
 
@@ -130,6 +134,10 @@ export const updateRolePassword = async (props: {
 
   const client = await createClient(connection);
   await client.connect();
+
+  const { SecretString: password } = await secretsmanager.getSecretValue({
+    SecretId: passwordArn,
+  });
 
   await client.query(format("ALTER USER %I WITH PASSWORD %L", name, password));
   await client.end();
