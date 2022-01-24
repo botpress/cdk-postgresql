@@ -12,42 +12,45 @@ const DB_MASTER_USERNAME = "postgres";
 const DB_MASTER_PASSWORD = "masterpwd";
 const DB_DEFAULT_DB = "postgres";
 
-describe("role", () => {
-  let pgContainer: StartedTestContainer;
-  let localstackContainer: StartedTestContainer;
+let pgContainer: StartedTestContainer;
+let localstackContainer: StartedTestContainer;
+let masterPasswordArn: string;
+let secretsManager: SecretsManager;
 
-  beforeAll(async () => {
-    pgContainer = await new GenericContainer("postgres")
-      .withExposedPorts(DB_PORT)
-      .withEnv("POSTGRES_PASSWORD", DB_MASTER_PASSWORD)
-      .start();
-    localstackContainer = await new GenericContainer("localstack/localstack")
-      .withEnv("SERVICES", "secretsmanager")
-      .withExposedPorts(4566)
-      .start();
-  }, ms("2m"));
+beforeAll(async () => {
+  pgContainer = await new GenericContainer("postgres")
+    .withExposedPorts(DB_PORT)
+    .withEnv("POSTGRES_PASSWORD", DB_MASTER_PASSWORD)
+    .start();
+  localstackContainer = await new GenericContainer("localstack/localstack")
+    .withEnv("SERVICES", "secretsmanager")
+    .withExposedPorts(4566)
+    .start();
 
-  afterAll(async () => {
-    await pgContainer.stop();
-    await localstackContainer.stop();
+  const endpoint = `http://localhost:${localstackContainer.getMappedPort(
+    4566
+  )}`;
+  secretsManager = new SecretsManager({
+    endpoint,
   });
+  utilModule.secretsmanager = secretsManager;
+  const response = await secretsManager.createSecret({
+    SecretString: DB_MASTER_PASSWORD,
+    Name: "/db/masterpwd",
+  });
+  if (!response.ARN) {
+    throw "failed creating master password in SecretsManager";
+  }
+  masterPasswordArn = response.ARN;
+}, ms("2m"));
 
+afterAll(async () => {
+  await pgContainer.stop();
+  await localstackContainer.stop();
+});
+
+describe("role", () => {
   test("create", async () => {
-    const endpoint = `http://localhost:${localstackContainer.getMappedPort(
-      4566
-    )}`;
-    const secretsManager = new SecretsManager({
-      endpoint,
-    });
-    utilModule.secretsmanager = secretsManager;
-    const { ARN: masterPasswordArn } = await secretsManager.createSecret({
-      SecretString: DB_MASTER_PASSWORD,
-      Name: "/db/masterpwd",
-    });
-    if (!masterPasswordArn) {
-      throw "masterPasswordArn undefined";
-    }
-
     const newRolePwd = "rolepwd";
     const { ARN: rolePasswordArn } = await secretsManager.createSecret({
       SecretString: newRolePwd,
@@ -101,41 +104,7 @@ describe("role", () => {
 });
 
 describe("database", () => {
-  let pgContainer: StartedTestContainer;
-  let localstackContainer: StartedTestContainer;
-
-  beforeAll(async () => {
-    pgContainer = await new GenericContainer("postgres")
-      .withExposedPorts(DB_PORT)
-      .withEnv("POSTGRES_PASSWORD", DB_MASTER_PASSWORD)
-      .start();
-    localstackContainer = await new GenericContainer("localstack/localstack")
-      .withEnv("SERVICES", "secretsmanager")
-      .withExposedPorts(4566)
-      .start();
-  }, ms("2m"));
-
-  afterAll(async () => {
-    await pgContainer.stop();
-    await localstackContainer.stop();
-  });
-
   test("create", async () => {
-    const endpoint = `http://localhost:${localstackContainer.getMappedPort(
-      4566
-    )}`;
-    const secretsManager = new SecretsManager({
-      endpoint,
-    });
-    utilModule.secretsmanager = secretsManager;
-    const { ARN } = await secretsManager.createSecret({
-      SecretString: DB_MASTER_PASSWORD,
-      Name: "/db/masterpwd",
-    });
-    if (!ARN) {
-      throw "ARN undefined";
-    }
-
     const pgHost = pgContainer.getHost();
     const pgPort = pgContainer.getMappedPort(DB_PORT);
     const newDbName = "mydb";
@@ -155,7 +124,7 @@ describe("database", () => {
           Port: pgPort,
           Username: DB_MASTER_USERNAME,
           Database: DB_DEFAULT_DB,
-          PasswordArn: ARN,
+          PasswordArn: masterPasswordArn,
           SSLMode: "disable",
         },
         Name: newDbName,
