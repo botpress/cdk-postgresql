@@ -2,7 +2,9 @@ import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client, ClientConfig } from "pg";
 import { Connection } from "./lambda.types";
 
-const secretsmanager = new SecretsManager({});
+const secretsmanager = new SecretsManager({
+  endpoint: process.env.TEST_AWS_ENDPOINT,
+});
 
 const isObject = (obj: any): obj is object => {
   return typeof obj === "object" && !Array.isArray(obj) && obj !== null;

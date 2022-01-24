@@ -2,25 +2,49 @@ import { handler } from "../lib/database.handler";
 import { GenericContainer, StartedTestContainer } from "testcontainers";
 import ms from "ms";
 import { CreateDatabaseEvent } from "../lib/lambda.types";
+import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 
 const DB_PORT = 5432;
 
 describe("database", () => {
-  let container: StartedTestContainer;
+  let pgContainer: StartedTestContainer;
+  let localstackContainer: StartedTestContainer;
 
   beforeAll(async () => {
-    container = await new GenericContainer("postgres")
+    pgContainer = await new GenericContainer("postgres")
       .withExposedPorts(DB_PORT)
       .withEnv("POSTGRES_PASSWORD", "postgres")
+      .start();
+    localstackContainer = await new GenericContainer("localstack/localstack")
+      .withEnv("SERVICES", "secretsmanager")
+      .withExposedPorts(4566)
       .start();
   }, ms("2m"));
 
   afterAll(async () => {
-    await container.stop();
+    await pgContainer.stop();
+    await localstackContainer.stop();
   });
 
   test("something", async () => {
-    console.log({ handler });
+    const endpoint = `http://localhost:${localstackContainer.getMappedPort(
+      4566
+    )}`;
+    // process.env.TEST_AWS_ENDPOINT = endpoint;
+    console.log({ endpoint });
+    const secretsManager = new SecretsManager({
+      endpoint,
+    });
+    console.log({ port: localstackContainer.getMappedPort(4566) });
+    const { ARN } = await secretsManager.createSecret({
+      SecretString: "hello",
+      Name: "lol",
+    });
+    if (!ARN) {
+      throw "ARN undefined";
+    }
+
+    console.log({ ARN });
     const event: CreateDatabaseEvent = {
       RequestType: "Create",
       ServiceToken: "",
@@ -32,11 +56,11 @@ describe("database", () => {
       ResourceProperties: {
         ServiceToken: "",
         Connection: {
-          Host: container.getHost(),
-          Port: container.getMappedPort(DB_PORT),
+          Host: pgContainer.getHost(),
+          Port: pgContainer.getMappedPort(DB_PORT),
           Username: "postgres",
           Database: "postgres",
-          PasswordArn: "asdf",
+          PasswordArn: ARN,
           SSLMode: "disable",
         },
         Name: "mydb",
