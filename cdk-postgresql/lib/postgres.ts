@@ -10,3 +10,13 @@ export const createRole = async (props: {
 
   await client.query(format("CREATE USER %I WITH PASSWORD %L", name, password));
 };
+
+export const createDatabase = async (props: {
+  client: Client;
+  name: string;
+  owner: string;
+}) => {
+  const { client, name, owner } = props;
+
+  return client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
+};

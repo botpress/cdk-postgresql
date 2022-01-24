@@ -6,11 +6,13 @@ import ms from "ms";
 import {
   CreateDatabaseEvent,
   CreateRoleEvent,
+  DeleteDatabaseEvent,
   DeleteRoleEvent,
 } from "../lib/lambda.types";
 import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client } from "pg";
-import { createRole } from "../lib/postgres";
+import { createDatabase, createRole } from "../lib/postgres";
+import { dbExists, getDatabases, getRoles } from "./helpers";
 
 const DB_PORT = 5432;
 const DB_MASTER_USERNAME = "postgres";
@@ -23,11 +25,6 @@ let masterPasswordArn: string;
 let secretsManager: SecretsManager;
 let pgHost: string;
 let pgPort: number;
-
-const getRoles = async (client: Client) => {
-  const { rows } = await client.query("SELECT rolname FROM pg_roles");
-  return rows.map((r) => r.rolname);
-};
 
 beforeEach(async () => {
   pgContainer = await new GenericContainer("postgres")
@@ -212,12 +209,56 @@ describe("database", () => {
     });
     await client.connect();
 
-    console.debug("querying DB for results");
-    const { rows } = await client.query(
-      `SELECT datname FROM pg_database WHERE datistemplate = false;`
-    );
-    await client.end();
+    expect(await dbExists(client, newDbName)).toEqual(true);
 
-    expect(rows.find((r) => r.datname === newDbName)).not.toBeUndefined();
+    await client.end();
+  });
+
+  test("delete", async () => {
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const newDbName = "mydb";
+    await createDatabase({
+      client: masterClient,
+      name: newDbName,
+      owner: "postgres",
+    });
+
+    const event: DeleteDatabaseEvent = {
+      RequestType: "Delete",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: newDbName,
+        Owner: "postgres",
+      },
+    };
+
+    await dbHandler(event);
+
+    console.log("checking if db exists");
+    expect(await dbExists(masterClient, newDbName)).toEqual(false);
+    await masterClient.end();
   });
 });

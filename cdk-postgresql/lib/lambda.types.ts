@@ -23,6 +23,16 @@ export interface CreateDatabaseEvent
   };
 }
 
+export interface DeleteDatabaseEvent
+  extends CloudFormationCustomResourceDeleteEvent {
+  ResourceProperties: {
+    ServiceToken: string;
+    Connection: Connection;
+    Name: string;
+    Owner: string;
+  };
+}
+
 export interface CreateRoleEvent
   extends CloudFormationCustomResourceCreateEvent {
   ResourceProperties: {
