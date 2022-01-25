@@ -28,10 +28,9 @@ export class Database extends Construct {
     const { connection } = props;
 
     const handler = new lambda.NodejsFunction(this, "handler", {
-      // depsLockFilePath: path.join(__dirname, "lambda", "package-lock.json"),
-      // bundling: {
-      // nodeModules: ["pg", "pg-format"],
-      // },
+      bundling: {
+        nodeModules: ["pg", "pg-format"],
+      },
       logRetention: logs.RetentionDays.ONE_MONTH,
       timeout: cdk.Duration.seconds(30),
       vpc: connection.vpc,
