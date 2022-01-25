@@ -86,8 +86,11 @@ describe("database", () => {
     // we expect n DBs
     template.resourceCountIs("Custom::Postgresql-Database", n);
 
-    // but only 2 Functions (1 for the DB handler (created by us), 1 for the LogRetention (created by the CDK))
-    template.resourceCountIs("AWS::Lambda::Function", 2);
+    // but only 3 Functions:
+    // * 1 for the DB handler (created by us)
+    // * 1 for the DB provider (created by us)
+    // * 1 for the LogRetention (created by the CDK))
+    template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });
 

@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
+import * as cr from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
 import path from "path";
 import { Connection } from "./connection";
@@ -28,12 +29,10 @@ export class Database extends Construct {
 
     const { connection } = props;
 
-    const handler = this.ensureSingletonHandler(connection);
-
-    connection.password.grantRead(handler);
+    const provider = this.ensureSingletonProvider(connection);
 
     new cdk.CustomResource(this, "CustomResource", {
-      serviceToken: handler.functionArn,
+      serviceToken: provider.serviceToken,
       resourceType: "Custom::Postgresql-Database",
       properties: {
         connection: {
@@ -53,26 +52,35 @@ export class Database extends Construct {
   }
 
   /**
-   * We want 1 shared Lambda handler for multiple Database constructs
+   * We want 1 shared provider for multiple Database constructs
    */
-  private ensureSingletonHandler(
-    connection: Connection
-  ): lambda.NodejsFunction {
-    const functionId = "cdk-postgresql:database:handler";
-    const existing = cdk.Stack.of(this).node.tryFindChild(functionId);
+  private ensureSingletonProvider(connection: Connection): cr.Provider {
+    const constructId = "cdk-postgresql:database:provider";
+    const existing = cdk.Stack.of(this).node.tryFindChild(constructId);
     if (existing) {
-      return existing as lambda.NodejsFunction;
+      return existing as cr.Provider;
     } else {
-      return new lambda.NodejsFunction(cdk.Stack.of(this), functionId, {
-        entry: path.join(__dirname, "database.handler.ts"),
-        bundling: {
-          nodeModules: ["pg", "pg-format"],
-        },
+      const handler = new lambda.NodejsFunction(
+        cdk.Stack.of(this),
+        constructId + "-handler",
+        {
+          entry: path.join(__dirname, "database.handler.ts"),
+          bundling: {
+            nodeModules: ["pg", "pg-format"],
+          },
+          logRetention: logs.RetentionDays.ONE_MONTH,
+          timeout: cdk.Duration.seconds(30),
+          vpc: connection.vpc,
+          vpcSubnets: connection.vpcSubnets,
+          securityGroups: connection.securityGroups,
+        }
+      );
+
+      connection.password.grantRead(handler);
+
+      return new cr.Provider(cdk.Stack.of(this), constructId, {
+        onEventHandler: handler,
         logRetention: logs.RetentionDays.ONE_MONTH,
-        timeout: cdk.Duration.seconds(30),
-        vpc: connection.vpc,
-        vpcSubnets: connection.vpcSubnets,
-        securityGroups: connection.securityGroups,
       });
     }
   }
