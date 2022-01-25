@@ -4,7 +4,7 @@ import { Connection } from "./lambda.types";
 
 export const secretsmanager = new SecretsManager({});
 
-const isObject = (obj: any): obj is object => {
+export const isObject = (obj: any): obj is { [key: string]: any } => {
   return typeof obj === "object" && !Array.isArray(obj) && obj !== null;
 };
 
@@ -20,11 +20,29 @@ export const createClient = async (connection: Connection) => {
     throw new Error(`cannot find secret with arn ${connection.PasswordArn}`);
   }
 
+  let parsedSecret;
+  try {
+    parsedSecret = JSON.parse(SecretString);
+  } catch (e) {
+    parsedSecret = SecretString;
+  }
+
   let password;
-  if (isObject(SecretString) && connection.PasswordField) {
-    password = SecretString[connection.PasswordField];
+  if (isObject(parsedSecret)) {
+    if (!connection.PasswordField) {
+      throw new Error(
+        "connection.PasswordField must be specified if secret is object"
+      );
+    }
+    if (!parsedSecret[connection.PasswordField]) {
+      throw new Error(
+        `PasswordField ${connection.PasswordField} was not found in secret`
+      );
+    }
+
+    password = parsedSecret[connection.PasswordField];
   } else {
-    password = SecretString;
+    password = parsedSecret;
   }
 
   const clientProps: ClientConfig = {

@@ -225,6 +225,62 @@ describe("role", () => {
     await client.end();
     await masterClient.end();
   });
+
+  test("passwordfield", async () => {
+    const newRolePwd = "rolepwd";
+    const masterpassword = "masterpwd";
+    const passwordField = "myfield";
+
+    // the master password is in a secret object
+    const masterPasswordArn = await createSecret(
+      secretsmanager,
+      JSON.stringify({
+        [passwordField]: masterpassword,
+      })
+    );
+
+    const rolePasswordArn = await createSecret(secretsmanager, newRolePwd);
+
+    const newRoleName = "myuser";
+
+    const event: CreateRoleEvent = {
+      RequestType: "Create",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      ResourceType: "",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          PasswordField: passwordField,
+          SSLMode: "disable",
+        },
+        Name: newRoleName,
+        PasswordArn: rolePasswordArn,
+      },
+    };
+
+    await roleHandler(event);
+
+    // try connecting as the new role
+    const client = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: newRoleName,
+      password: newRolePwd,
+    });
+    await client.connect();
+
+    await client.end();
+  });
 });
 
 describe("database", () => {

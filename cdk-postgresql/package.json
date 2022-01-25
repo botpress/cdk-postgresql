@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "DEBUG=testcontainers* AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=something AWS_SECRET_ACCESS_KEY=something jest"
+    "test": "AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=something AWS_SECRET_ACCESS_KEY=something jest"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.2.0",
