@@ -4,7 +4,6 @@ import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Database } from "../lib";
-import { inspect } from "util";
 
 class TestStack extends cdk.Stack {
   readonly exportPrefix: string;
@@ -12,6 +11,7 @@ class TestStack extends cdk.Stack {
     super(scope, id);
   }
 }
+
 const getLogicalId = (construct: Construct) =>
   cdk.Stack.of(construct).getLogicalId(
     construct.node.defaultChild as cdk.CfnElement
@@ -67,31 +67,26 @@ describe("database", () => {
     const username = "theusername";
     const name = "mydb";
     const owner = "theowner";
+    const n = 5;
 
-    new Database(stack, "DB1", {
-      name,
-      owner,
-      connection: {
-        host,
-        password,
-        username,
-      },
-    });
-
-    new Database(stack, "DB2", {
-      name,
-      owner,
-      connection: {
-        host,
-        password,
-        username,
-      },
-    });
+    for (let i = 0; i < n; i++) {
+      new Database(stack, `DB${i}`, {
+        name,
+        owner,
+        connection: {
+          host,
+          password,
+          username,
+        },
+      });
+    }
 
     const template = Template.fromStack(stack);
-    template.resourceCountIs("Custom::Postgresql-Database", 2);
 
+    // we expect n DBs
+    template.resourceCountIs("Custom::Postgresql-Database", n);
+
+    // but only 2 Functions (1 for the DB handler (created by us), 1 for the LogRetention (created by the CDK))
     template.resourceCountIs("AWS::Lambda::Function", 2);
-    // console.log(inspect(template.toJSON(), true, null, true));
   });
 });

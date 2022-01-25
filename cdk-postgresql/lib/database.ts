@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
+import path from "path";
 import { Connection } from "./connection";
 
 export interface DatabaseProps {
@@ -27,16 +28,7 @@ export class Database extends Construct {
 
     const { connection } = props;
 
-    const handler = new lambda.NodejsFunction(this, "handler", {
-      bundling: {
-        nodeModules: ["pg", "pg-format"],
-      },
-      logRetention: logs.RetentionDays.ONE_MONTH,
-      timeout: cdk.Duration.seconds(30),
-      vpc: connection.vpc,
-      vpcSubnets: connection.vpcSubnets,
-      securityGroups: connection.securityGroups,
-    });
+    const handler = this.ensureSingletonHandler(connection);
 
     connection.password.grantRead(handler);
 
@@ -59,4 +51,33 @@ export class Database extends Construct {
       pascalCaseProperties: true,
     });
   }
+
+  /**
+   * We want 1 shared Lambda handler for multiple Database constructs
+   */
+  private ensureSingletonHandler(
+    connection: Connection
+  ): lambda.NodejsFunction {
+    const functionId = slugify("cdk-postgresql:database:handler");
+    const existing = cdk.Stack.of(this).node.tryFindChild(functionId);
+    if (existing) {
+      return existing as lambda.NodejsFunction;
+    } else {
+      return new lambda.NodejsFunction(cdk.Stack.of(this), functionId, {
+        entry: path.join(__dirname, "database.handler.ts"),
+        bundling: {
+          nodeModules: ["pg", "pg-format"],
+        },
+        logRetention: logs.RetentionDays.ONE_MONTH,
+        timeout: cdk.Duration.seconds(30),
+        vpc: connection.vpc,
+        vpcSubnets: connection.vpcSubnets,
+        securityGroups: connection.securityGroups,
+      });
+    }
+  }
+}
+
+function slugify(x: string): string {
+  return x.replace(/[^a-zA-Z0-9]/g, "");
 }
