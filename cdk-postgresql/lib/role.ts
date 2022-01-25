@@ -25,12 +25,17 @@ export interface RoleProps {
 }
 
 export class Role extends Construct {
+  private handler: lambda.NodejsFunction;
+
   constructor(scope: Construct, id: string, props: RoleProps) {
     super(scope, id);
 
-    const { connection } = props;
+    const { connection, name, password } = props;
 
     const provider = this.ensureSingletonProvider(connection);
+
+    connection.password.grantRead(this.handler);
+    password.grantRead(this.handler);
 
     new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
@@ -45,8 +50,8 @@ export class Role extends Construct {
           PasswordField: connection.passwordField,
           SSLMode: connection.sslMode || "require",
         },
-        name: props.name,
-        passwordArn: props.password.secretArn,
+        name,
+        passwordArn: password.secretArn,
       },
       pascalCaseProperties: true,
     });
@@ -77,7 +82,7 @@ export class Role extends Construct {
         }
       );
 
-      connection.password.grantRead(handler);
+      this.handler = handler;
 
       return new cr.Provider(cdk.Stack.of(this), constructId, {
         onEventHandler: handler,
