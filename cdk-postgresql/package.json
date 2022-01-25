@@ -19,7 +19,7 @@
     "test": "jest"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.0.0",
+    "aws-cdk-lib": "^2.2.0",
     "constructs": "^10.0.0"
   },
   "dependencies": {
@@ -35,7 +35,7 @@
     "@types/ms": "^0.7.31",
     "@types/pg": "8.6.4",
     "@types/pg-format": "1.0.2",
-    "aws-cdk-lib": "^2.0.0",
+    "aws-cdk-lib": "^2.2.0",
     "constructs": "^10.0.0",
     "eslint": "6.2.0",
     "jest": "^27.4.7",
