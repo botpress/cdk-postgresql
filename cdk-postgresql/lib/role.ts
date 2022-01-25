@@ -25,19 +25,16 @@ export interface RoleProps {
 }
 
 export class Role extends Construct {
-  private handler: lambda.NodejsFunction;
+  public readonly name: string;
 
   constructor(scope: Construct, id: string, props: RoleProps) {
     super(scope, id);
 
     const { connection, name, password } = props;
 
-    const provider = this.ensureSingletonProvider(connection);
+    const provider = this.ensureSingletonProvider(connection, password);
 
-    connection.password.grantRead(this.handler);
-    password.grantRead(this.handler);
-
-    new cdk.CustomResource(this, "CustomResource", {
+    const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
       resourceType: "Custom::Postgresql-Role",
       properties: {
@@ -55,12 +52,17 @@ export class Role extends Construct {
       },
       pascalCaseProperties: true,
     });
+
+    this.name = cr.getAttString("Name");
   }
 
   /**
    * We want 1 shared provider for multiple Role constructs
    */
-  private ensureSingletonProvider(connection: Connection): cr.Provider {
+  private ensureSingletonProvider(
+    connection: Connection,
+    password: secretsmanager.ISecret
+  ): cr.Provider {
     const constructId = "cdk-postgresql:role:provider";
     const existing = cdk.Stack.of(this).node.tryFindChild(constructId);
     if (existing) {
@@ -82,7 +84,8 @@ export class Role extends Construct {
         }
       );
 
-      this.handler = handler;
+      connection.password.grantRead(handler);
+      password.grantRead(handler);
 
       return new cr.Provider(cdk.Stack.of(this), constructId, {
         onEventHandler: handler,

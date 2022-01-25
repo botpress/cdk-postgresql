@@ -24,16 +24,12 @@ export interface DatabaseProps {
 }
 
 export class Database extends Construct {
-  private handler: lambda.NodejsFunction;
-
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
     const { connection, name, owner } = props;
 
     const provider = this.ensureSingletonProvider(connection);
-
-    connection.password.grantRead(this.handler);
 
     new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
@@ -80,7 +76,7 @@ export class Database extends Construct {
         }
       );
 
-      this.handler = handler;
+      connection.password.grantRead(handler);
 
       return new cr.Provider(cdk.Stack.of(this), constructId, {
         onEventHandler: handler,

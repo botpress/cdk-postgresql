@@ -18,5 +18,6 @@ export const createDatabase = async (props: {
 }) => {
   const { client, name, owner } = props;
 
+  await client.query(format("GRANT %I TO %I", owner, client.user));
   return client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
 };
