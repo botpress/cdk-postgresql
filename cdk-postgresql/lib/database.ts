@@ -58,7 +58,7 @@ export class Database extends Construct {
   private ensureSingletonHandler(
     connection: Connection
   ): lambda.NodejsFunction {
-    const functionId = slugify("cdk-postgresql:database:handler");
+    const functionId = "cdk-postgresql:database:handler";
     const existing = cdk.Stack.of(this).node.tryFindChild(functionId);
     if (existing) {
       return existing as lambda.NodejsFunction;
@@ -76,8 +76,4 @@ export class Database extends Construct {
       });
     }
   }
-}
-
-function slugify(x: string): string {
-  return x.replace(/[^a-zA-Z0-9]/g, "");
 }

@@ -1,9 +1,9 @@
-import { test, expect } from "@jest/globals";
-import { Match, Template } from "aws-cdk-lib/assertions";
+import { test } from "@jest/globals";
+import { Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Database } from "../lib";
+import { Database, Role } from "../lib";
 
 class TestStack extends cdk.Stack {
   readonly exportPrefix: string;
@@ -87,6 +87,88 @@ describe("database", () => {
     template.resourceCountIs("Custom::Postgresql-Database", n);
 
     // but only 2 Functions (1 for the DB handler (created by us), 1 for the LogRetention (created by the CDK))
+    template.resourceCountIs("AWS::Lambda::Function", 2);
+  });
+});
+
+describe("role", () => {
+  test("has correct props", () => {
+    const app = new cdk.App();
+    const stack = new TestStack(app, "Stack");
+
+    const connectionPassword = new secretsmanager.Secret(
+      stack,
+      "ConnectionPassword"
+    );
+    const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
+
+    const host = "somedb.com";
+    const username = "theusername";
+    const name = "rolename";
+
+    new Role(stack, "Role", {
+      name,
+      password: rolePassword,
+      connection: {
+        host,
+        password: connectionPassword,
+        username,
+      },
+    });
+
+    const template = Template.fromStack(stack);
+    template.resourceCountIs("Custom::Postgresql-Role", 1);
+    template.hasResourceProperties("Custom::Postgresql-Role", {
+      Connection: {
+        Host: host,
+        Port: 5432,
+        Database: "postgres",
+        Username: username,
+        PasswordArn: {
+          Ref: getLogicalId(connectionPassword),
+        },
+        SSLMode: "require",
+      },
+      Name: name,
+      PasswordArn: {
+        Ref: getLogicalId(rolePassword),
+      },
+    });
+  });
+
+  test("creates singleton lambda", () => {
+    const app = new cdk.App();
+    const stack = new TestStack(app, "Stack");
+
+    const connectionPassword = new secretsmanager.Secret(
+      stack,
+      "ConnectionPassword"
+    );
+    const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
+
+    const host = "somedb.com";
+    const username = "theusername";
+    const name = "mydb";
+    const n = 5;
+
+    for (let i = 0; i < n; i++) {
+      new Role(stack, `Role${i}`, {
+        name,
+        password: rolePassword,
+        connection: {
+          host,
+          password: connectionPassword,
+          username,
+        },
+      });
+    }
+
+    const template = Template.fromStack(stack);
+
+    // we expect n Roles
+    template.resourceCountIs("Custom::Postgresql-Role", n);
+
+    // but only 2 Functions (1 for the Role handler (created by us), 1 for the LogRetention (created by the CDK))
     template.resourceCountIs("AWS::Lambda::Function", 2);
   });
 });
