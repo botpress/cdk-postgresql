@@ -19,7 +19,7 @@ export class AppStack extends cdk.Stack {
       connection: {
         host: cluster.clusterEndpoint.hostname,
         port: cluster.clusterEndpoint.port,
-        username: "admin",
+        username: "postgres",
         password: secret,
         passwordField: "password",
       },
