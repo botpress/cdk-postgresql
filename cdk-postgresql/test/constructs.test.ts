@@ -171,7 +171,10 @@ describe("role", () => {
     // we expect n Roles
     template.resourceCountIs("Custom::Postgresql-Role", n);
 
-    // but only 2 Functions (1 for the Role handler (created by us), 1 for the LogRetention (created by the CDK))
-    template.resourceCountIs("AWS::Lambda::Function", 2);
+    // but only 3 Functions:
+    // * 1 for the Role handler (created by us)
+    // * 1 for the Role provider (created by us)
+    // * 1 for the LogRetention (created by the CDK))
+    template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });
