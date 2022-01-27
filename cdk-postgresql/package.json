@@ -1,6 +1,6 @@
 {
   "name": "@botpress/cdk-postgresql",
-  "version": "2.0.0",
+  "version": "2.0.0-beta.2",
   "description": "Postgresql constructs for AWS CDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
