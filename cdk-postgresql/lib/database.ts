@@ -24,6 +24,8 @@ export interface DatabaseProps {
 }
 
 export class Database extends Construct {
+  public readonly name: string;
+
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
@@ -31,7 +33,7 @@ export class Database extends Construct {
 
     const provider = this.ensureSingletonProvider(connection);
 
-    new cdk.CustomResource(this, "CustomResource", {
+    const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
       resourceType: "Custom::Postgresql-Database",
       properties: {
@@ -49,6 +51,8 @@ export class Database extends Construct {
       },
       pascalCaseProperties: true,
     });
+
+    this.name = cr.getAttString("Name");
   }
 
   /**

@@ -37,8 +37,16 @@ const generatePhysicalId = (props: Props): string => {
 const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await createDatabase(props.Connection, props.Name, props.Owner);
-  return { PhysicalResourceId: generatePhysicalId(props) };
+  const name = props.Name;
+  await createDatabase({
+    connection: props.Connection,
+    name,
+    owner: props.Owner,
+  });
+  return {
+    PhysicalResourceId: generatePhysicalId(props),
+    Data: { Name: name },
+  };
 };
 
 const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
@@ -50,7 +58,11 @@ const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const physicalResourceId = generatePhysicalId(props);
 
   if (physicalResourceId != oldPhysicalResourceId) {
-    await createDatabase(props.Connection, props.Name, props.Owner);
+    await createDatabase({
+      connection: props.Connection,
+      name: props.Name,
+      owner: props.Owner,
+    });
     return { PhysicalResourceId: physicalResourceId };
   }
 
@@ -82,11 +94,12 @@ const validateProps = (props: Props) => {
   }
 };
 
-export const createDatabase = async (
-  connection: Connection,
-  name: string,
-  owner: string
-) => {
+export const createDatabase = async (props: {
+  connection: Connection;
+  name: string;
+  owner: string;
+}) => {
+  const { connection, name, owner } = props;
   console.log("Creating database", name);
   const client = await createClient(connection);
   await client.connect();
