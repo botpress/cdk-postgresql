@@ -1,11 +1,8 @@
 import { Construct } from "constructs";
 import { Connection } from "./connection";
 import * as cdk from "aws-cdk-lib";
-import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
-import * as logs from "aws-cdk-lib/aws-logs";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as cr from "aws-cdk-lib/custom-resources";
-import path from "path";
+import { ensureSingletonProvider } from "./singleton-provider";
 
 export interface RoleProps {
   /**
@@ -32,7 +29,7 @@ export class Role extends Construct {
 
     const { connection, name, password } = props;
 
-    const provider = this.ensureSingletonProvider(connection, password);
+    const provider = ensureSingletonProvider(connection, cdk.Stack.of(this));
 
     const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
@@ -54,43 +51,5 @@ export class Role extends Construct {
     });
 
     this.name = cr.getAttString("Name");
-  }
-
-  /**
-   * We want 1 shared provider for multiple Role constructs
-   */
-  private ensureSingletonProvider(
-    connection: Connection,
-    password: secretsmanager.ISecret
-  ): cr.Provider {
-    const constructId = "cdk-postgresql:role:provider";
-    const existing = cdk.Stack.of(this).node.tryFindChild(constructId);
-    if (existing) {
-      return existing as cr.Provider;
-    } else {
-      const handler = new lambda.NodejsFunction(
-        cdk.Stack.of(this),
-        constructId + "-handler",
-        {
-          entry: path.join(__dirname, "role.handler.js"),
-          bundling: {
-            nodeModules: ["pg", "pg-format"],
-          },
-          logRetention: logs.RetentionDays.ONE_MONTH,
-          timeout: cdk.Duration.seconds(30),
-          vpc: connection.vpc,
-          vpcSubnets: connection.vpcSubnets,
-          securityGroups: connection.securityGroups,
-        }
-      );
-
-      connection.password.grantRead(handler);
-      password.grantRead(handler);
-
-      return new cr.Provider(cdk.Stack.of(this), constructId, {
-        onEventHandler: handler,
-        logRetention: logs.RetentionDays.ONE_MONTH,
-      });
-    }
   }
 }

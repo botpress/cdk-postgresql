@@ -26,11 +26,11 @@ interface Props {
 export const handler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.RequestType) {
     case "Create":
-      return await handleCreate(event);
+      return handleCreate(event);
     case "Update":
-      return await handleUpdate(event);
+      return handleUpdate(event);
     case "Delete":
-      return await handleDelete(event);
+      return handleDelete(event);
   }
 };
 
