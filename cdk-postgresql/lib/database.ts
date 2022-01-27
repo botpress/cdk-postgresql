@@ -68,7 +68,7 @@ export class Database extends Construct {
         cdk.Stack.of(this),
         constructId + "-handler",
         {
-          entry: path.join(__dirname, "database.handler.ts"),
+          entry: path.join(__dirname, "database.handler.js"),
           bundling: {
             nodeModules: ["pg", "pg-format"],
           },

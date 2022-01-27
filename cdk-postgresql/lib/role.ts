@@ -72,7 +72,7 @@ export class Role extends Construct {
         cdk.Stack.of(this),
         constructId + "-handler",
         {
-          entry: path.join(__dirname, "role.handler.ts"),
+          entry: path.join(__dirname, "role.handler.js"),
           bundling: {
             nodeModules: ["pg", "pg-format"],
           },
