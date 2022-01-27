@@ -1,5 +1,11 @@
-import { Client } from "pg";
+import { VError } from "verror";
+import { Client, DatabaseError } from "pg";
 import format from "pg-format";
+import { isNativeError } from "util/types";
+
+const isDatabaseError = (e: any): e is DatabaseError => {
+  return typeof e.name === "string" && typeof e.length === "number";
+};
 
 export const createRole = async (props: {
   client: Client;
@@ -18,6 +24,24 @@ export const createDatabase = async (props: {
 }) => {
   const { client, name, owner } = props;
 
-  await client.query(format("GRANT %I TO %I", owner, client.user));
+  try {
+    await client.query(format("GRANT %I TO %I", owner, client.user));
+  } catch (e) {
+    if (!isNativeError(e)) {
+      throw e;
+    }
+    if (
+      !isDatabaseError(e) ||
+      !(
+        e.code === "0LP01" &&
+        e.message === `role "${owner}" is a member of role "${client.user}"`
+      )
+    ) {
+      throw new VError(e, "unexpected error while creating grant");
+    }
+
+    console.warn(e.message);
+  }
+
   return client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
 };
