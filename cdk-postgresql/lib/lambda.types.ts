@@ -4,6 +4,8 @@ import {
   CloudFormationCustomResourceUpdateEvent,
 } from "aws-lambda";
 
+export type SSLMode = "require" | "disable";
+
 export interface Connection {
   Host: string;
   Port: number;
@@ -11,7 +13,7 @@ export interface Connection {
   PasswordArn: string;
   PasswordField?: string;
   Database: string;
-  SSLMode: "require" | "disable";
+  SSLMode: SSLMode;
 }
 
 export interface CreateDatabaseEvent

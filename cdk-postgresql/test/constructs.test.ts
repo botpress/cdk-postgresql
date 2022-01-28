@@ -3,7 +3,7 @@ import { Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Database, Role } from "../lib";
+import { Database, Role, Provider } from "../lib";
 
 class TestStack extends cdk.Stack {
   readonly exportPrefix: string;
@@ -29,14 +29,16 @@ describe("database", () => {
     const name = "mydb";
     const owner = "theowner";
 
+    const provider = new Provider(stack, "provider", {
+      host,
+      username,
+      password,
+    });
+
     new Database(stack, "DB", {
       name,
       owner,
-      connection: {
-        host,
-        password,
-        username,
-      },
+      provider,
     });
 
     const template = Template.fromStack(stack);
@@ -69,15 +71,17 @@ describe("database", () => {
     const owner = "theowner";
     const n = 5;
 
+    const provider = new Provider(stack, "provider", {
+      host,
+      username,
+      password,
+    });
+
     for (let i = 0; i < n; i++) {
       new Database(stack, `DB${i}`, {
         name,
         owner,
-        connection: {
-          host,
-          password,
-          username,
-        },
+        provider,
       });
     }
 
@@ -108,15 +112,16 @@ describe("role", () => {
     const host = "somedb.com";
     const username = "theusername";
     const name = "rolename";
+    const provider = new Provider(stack, "provider", {
+      host,
+      username,
+      password: connectionPassword,
+    });
 
     new Role(stack, "Role", {
       name,
       password: rolePassword,
-      connection: {
-        host,
-        password: connectionPassword,
-        username,
-      },
+      provider,
     });
 
     const template = Template.fromStack(stack);
@@ -154,15 +159,17 @@ describe("role", () => {
     const name = "mydb";
     const n = 5;
 
+    const provider = new Provider(stack, "provider", {
+      host,
+      username,
+      password: connectionPassword,
+    });
+
     for (let i = 0; i < n; i++) {
       new Role(stack, `Role${i}`, {
         name,
         password: rolePassword,
-        connection: {
-          host,
-          password: connectionPassword,
-          username,
-        },
+        provider,
       });
     }
 

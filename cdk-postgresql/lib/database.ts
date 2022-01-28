@@ -1,14 +1,13 @@
 import * as cdk from "aws-cdk-lib";
 import { RemovalPolicy } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Connection } from "./connection";
-import { ensureSingletonProvider } from "./singleton-provider";
+import { Provider } from "./provider";
 
 export interface DatabaseProps {
   /**
-   * Connection required to connect to the Postgresql server
+   * Provider required to connect to the Postgresql server
    */
-  connection: Connection;
+  provider: Provider;
 
   /**
    * The name of the database. Must be unique on the PostgreSQL server instance where it is configured.
@@ -34,26 +33,13 @@ export class Database extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
-    const { connection, name, owner, removalPolicy } = props;
-
-    const { provider } = ensureSingletonProvider(
-      connection,
-      cdk.Stack.of(this)
-    );
+    const { provider, name, owner, removalPolicy } = props;
 
     const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
       resourceType: "Custom::Postgresql-Database",
       properties: {
-        connection: {
-          Host: connection.host,
-          Port: connection.port || 5432,
-          Database: connection.database || "postgres",
-          Username: connection.username,
-          PasswordArn: connection.password.secretArn,
-          PasswordField: connection.passwordField,
-          SSLMode: connection.sslMode || "require",
-        },
+        connection: provider.buildConnectionProperty(),
         name,
         owner,
       },
@@ -61,6 +47,7 @@ export class Database extends Construct {
     });
 
     cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
+    cr.node.addDependency(provider);
 
     this.name = cr.getAttString("Name");
   }
