@@ -8,7 +8,7 @@ import { Connection } from "./connection";
 const CONSTRUCT_ID = "cdk-postgresql:provider";
 
 /**
- * We want 1 shared provider for multiple Database constructs
+ * We want 1 shared provider for multiple Database and Role constructs
  */
 export const ensureSingletonProvider = (
   connection: Connection,
@@ -22,7 +22,7 @@ export const ensureSingletonProvider = (
       stack,
       CONSTRUCT_ID + "-handler",
       {
-        entry: path.join(__dirname, "database.handler.js"),
+        entry: path.join(__dirname, "handler.js"),
         bundling: {
           nodeModules: ["pg", "pg-format"],
         },
