@@ -23,7 +23,7 @@ export interface RoleProps {
   /**
    * Policy to apply when the role is removed from this stack.
    *
-   * @default - The role will be orphaned.
+   * @default - The role will be destroyed.
    */
   removalPolicy?: RemovalPolicy;
 }
