@@ -49,7 +49,7 @@ export class Role extends Construct {
       pascalCaseProperties: true,
     });
 
-    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
+    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.DESTROY);
     cr.node.addDependency(provider);
 
     this.name = cr.getAttString("Name");
