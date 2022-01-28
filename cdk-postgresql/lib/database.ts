@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import { RemovalPolicy } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Connection } from "./connection";
 import { ensureSingletonProvider } from "./singleton-provider";
@@ -18,6 +19,13 @@ export interface DatabaseProps {
    * The role name of the user who will own the database
    */
   owner: string;
+
+  /**
+   * Policy to apply when the database is removed from this stack.
+   *
+   * @default - The database will be orphaned.
+   */
+  removalPolicy?: RemovalPolicy;
 }
 
 export class Database extends Construct {
@@ -26,7 +34,7 @@ export class Database extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
-    const { connection, name, owner } = props;
+    const { connection, name, owner, removalPolicy } = props;
 
     const provider = ensureSingletonProvider(connection, cdk.Stack.of(this));
 
@@ -48,6 +56,8 @@ export class Database extends Construct {
       },
       pascalCaseProperties: true,
     });
+
+    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
 
     this.name = cr.getAttString("Name");
   }

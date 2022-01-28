@@ -3,6 +3,7 @@ import { Connection } from "./connection";
 import * as cdk from "aws-cdk-lib";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import { ensureSingletonProvider } from "./singleton-provider";
+import { RemovalPolicy } from "aws-cdk-lib";
 
 export interface RoleProps {
   /**
@@ -19,6 +20,13 @@ export interface RoleProps {
    * Set the role's password
    */
   password: secretsmanager.ISecret;
+
+  /**
+   * Policy to apply when the role is removed from this stack.
+   *
+   * @default - The role will be orphaned.
+   */
+  removalPolicy?: RemovalPolicy;
 }
 
 export class Role extends Construct {
@@ -27,7 +35,7 @@ export class Role extends Construct {
   constructor(scope: Construct, id: string, props: RoleProps) {
     super(scope, id);
 
-    const { connection, name, password } = props;
+    const { connection, name, password, removalPolicy } = props;
 
     const provider = ensureSingletonProvider(connection, cdk.Stack.of(this));
 
@@ -49,6 +57,8 @@ export class Role extends Construct {
       },
       pascalCaseProperties: true,
     });
+
+    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
 
     this.name = cr.getAttString("Name");
   }
