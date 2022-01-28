@@ -36,7 +36,10 @@ export class Database extends Construct {
 
     const { connection, name, owner, removalPolicy } = props;
 
-    const provider = ensureSingletonProvider(connection, cdk.Stack.of(this));
+    const { provider } = ensureSingletonProvider(
+      connection,
+      cdk.Stack.of(this)
+    );
 
     const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,

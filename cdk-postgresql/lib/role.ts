@@ -37,7 +37,12 @@ export class Role extends Construct {
 
     const { connection, name, password, removalPolicy } = props;
 
-    const provider = ensureSingletonProvider(connection, cdk.Stack.of(this));
+    const { provider, handler } = ensureSingletonProvider(
+      connection,
+      cdk.Stack.of(this)
+    );
+
+    password.grantRead(handler);
 
     const cr = new cdk.CustomResource(this, "CustomResource", {
       serviceToken: provider.serviceToken,
