@@ -28,8 +28,6 @@ export interface DatabaseProps {
 }
 
 export class Database extends Construct {
-  public readonly name: string;
-
   constructor(scope: Construct, id: string, props: DatabaseProps) {
     super(scope, id);
 
@@ -48,7 +46,5 @@ export class Database extends Construct {
 
     cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
     cr.node.addDependency(provider);
-
-    this.name = cr.getAttString("Name");
   }
 }

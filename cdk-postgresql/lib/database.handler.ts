@@ -37,15 +37,13 @@ const generatePhysicalId = (props: Props): string => {
 const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  const name = props.Name;
   await createDatabase({
     connection: props.Connection,
-    name,
+    name: props.Name,
     owner: props.Owner,
   });
   return {
     PhysicalResourceId: generatePhysicalId(props),
-    Data: { Name: name },
   };
 };
 
