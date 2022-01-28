@@ -7,17 +7,16 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as cr from "aws-cdk-lib/custom-resources";
 import path from "path";
-import { IConnectable } from "aws-cdk-lib/aws-ec2";
 import { Connection, SSLMode } from "./lambda.types";
 
 interface ProviderProps {
   /**
-   * The address for the postgresql server connection
+   * The address for the server connection
    */
   host: string;
 
   /**
-   * The port for the postgresql server connection
+   * The port for the server connection
    *
    * @default - 5432
    */
@@ -53,18 +52,18 @@ interface ProviderProps {
   sslMode?: "require" | "disable";
 
   /**
-   * VPC network to place the Lambda network interfaces
+   * VPC network to place the Provider Lambda network interfaces
    *
    * @default - "Provider is not placed within a VPC"
    */
   vpc?: ec2.IVpc;
 
-  //   /**
-  //    * The security group for the Database instance.
-  //    * The Lambda used by the Provider will be granted access to the provided port.
-  //    *
-  //    * @default - "The Lambda has no access to the Database"
-  //    */
+  /**
+   * The Provider Lambda will be granted inbound access
+   * on the specified port for each of the specified Security Groups.
+   *
+   * @default - "The Lambda has no access to any Security Groups"
+   */
   securityGroups?: ec2.ISecurityGroup[];
 }
 
