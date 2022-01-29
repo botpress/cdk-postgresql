@@ -37,15 +37,13 @@ export const handler = async (event: CloudFormationCustomResourceEvent) => {
 const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  const name = props.Name;
   await createRole({
     connection: props.Connection,
-    name,
+    name: props.Name,
     passwordArn: props.PasswordArn,
   });
   return {
     PhysicalResourceId: generatePhysicalId(props),
-    Data: { Name: name },
   };
 };
 

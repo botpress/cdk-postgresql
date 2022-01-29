@@ -29,8 +29,6 @@ export interface RoleProps {
 }
 
 export class Role extends Construct {
-  public readonly name: string;
-
   constructor(scope: Construct, id: string, props: RoleProps) {
     super(scope, id);
 
@@ -51,7 +49,5 @@ export class Role extends Construct {
 
     cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.DESTROY);
     cr.node.addDependency(provider);
-
-    this.name = cr.getAttString("Name");
   }
 }
