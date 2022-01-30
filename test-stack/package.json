@@ -21,7 +21,7 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
-    "@botpress/cdk-postgresql": "2.0.0",
+    "@botpress/cdk-postgresql": "2.0.0-beta.9",
     "aws-cdk-lib": "^2.2.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.16"

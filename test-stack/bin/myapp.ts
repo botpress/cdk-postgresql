@@ -4,6 +4,25 @@ import * as cdk from "aws-cdk-lib";
 import { ClusterStack } from "../lib/cluster-stack";
 import { AppStack } from "../lib/app-stack";
 
+const stackName = process.env.STACK_NAME;
+if (!stackName) {
+  throw new Error("must specify appName");
+}
+
 const app = new cdk.App();
-const { cluster, secret } = new ClusterStack(app, "PGTest");
-new AppStack(app, "AppStack9", { cluster, secret });
+const {
+  publicCluster,
+  privateClusterSecurityGroup,
+  privateCluster,
+  vpc,
+  privateClusterSecret,
+  publicClusterSecret,
+} = new ClusterStack(app, "PGTest");
+new AppStack(app, stackName, {
+  publicCluster,
+  privateCluster,
+  privateClusterSecurityGroup,
+  publicClusterSecret,
+  vpc,
+  privateClusterSecret,
+});
