@@ -1,45 +1,53 @@
-const format = require("pg-format");
-import {
-  ConnectionInfo,
-  createClient,
-  validateConnectionInfo,
-  hashCode,
-} from "./util";
+import format from "pg-format";
+import { createClient, validateConnection, hashCode } from "./util";
+import * as postgres from "./postgres";
 
-import { OnEventRequest } from "@aws-cdk/custom-resources/lib/provider-framework/types";
+import {
+  CloudFormationCustomResourceEvent,
+  CloudFormationCustomResourceCreateEvent,
+  CloudFormationCustomResourceUpdateEvent,
+  CloudFormationCustomResourceDeleteEvent,
+} from "aws-lambda/trigger/cloudformation-custom-resource";
+import { Connection } from "./lambda.types";
 
 interface Props {
   ServiceToken: string;
-  ConnectionInfo: ConnectionInfo;
+  Connection: Connection;
   Name: string;
   Owner: string;
 }
 
-export const databaseHandler = async (event: OnEventRequest) => {
+export const handler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.RequestType) {
     case "Create":
-      return await handleCreate(event);
+      return handleCreate(event);
     case "Update":
-      return await handleUpdate(event);
+      return handleUpdate(event);
     case "Delete":
-      return await handleDelete(event);
+      return handleDelete(event);
   }
 };
 
 const generatePhysicalId = (props: Props): string => {
-  const { Host, Port } = props.ConnectionInfo;
+  const { Host, Port } = props.Connection;
   const suffix = Math.abs(hashCode(`${Host}-${Port}`));
   return `${props.Name}-${suffix}`;
 };
 
-const handleCreate = async (event: OnEventRequest) => {
+const handleCreate = async (event: CloudFormationCustomResourceCreateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await createDatabase(props.ConnectionInfo, props.Name, props.Owner);
-  return { PhysicalResourceId: generatePhysicalId(props) };
+  await createDatabase({
+    connection: props.Connection,
+    name: props.Name,
+    owner: props.Owner,
+  });
+  return {
+    PhysicalResourceId: generatePhysicalId(props),
+  };
 };
 
-const handleUpdate = async (event: OnEventRequest) => {
+const handleUpdate = async (event: CloudFormationCustomResourceUpdateEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
   const oldProps = event.OldResourceProperties as Props;
@@ -48,29 +56,33 @@ const handleUpdate = async (event: OnEventRequest) => {
   const physicalResourceId = generatePhysicalId(props);
 
   if (physicalResourceId != oldPhysicalResourceId) {
-    await createDatabase(props.ConnectionInfo, props.Name, props.Owner);
+    await createDatabase({
+      connection: props.Connection,
+      name: props.Name,
+      owner: props.Owner,
+    });
     return { PhysicalResourceId: physicalResourceId };
   }
 
   if (props.Owner != oldProps.Owner) {
-    await updateDbOwner(props.ConnectionInfo, props.Name, props.Owner);
+    await updateDbOwner(props.Connection, props.Name, props.Owner);
   }
 
   return { PhysicalResourceId: physicalResourceId };
 };
 
-const handleDelete = async (event: OnEventRequest) => {
+const handleDelete = async (event: CloudFormationCustomResourceDeleteEvent) => {
   const props = event.ResourceProperties as Props;
   validateProps(props);
-  await deleteDatabase(props.ConnectionInfo, props.Name, props.Owner);
+  await deleteDatabase(props.Connection, props.Name, props.Owner);
   return {};
 };
 
 const validateProps = (props: Props) => {
-  if (!("ConnectionInfo" in props)) {
-    throw "ConnectionInfo property is required";
+  if (!("Connection" in props)) {
+    throw "Connection property is required";
   }
-  validateConnectionInfo(props.ConnectionInfo);
+  validateConnection(props.Connection);
 
   if (!("Name" in props)) {
     throw "Name property is required";
@@ -80,28 +92,28 @@ const validateProps = (props: Props) => {
   }
 };
 
-export const createDatabase = async (
-  connectionInfo: ConnectionInfo,
-  name: string,
-  owner: string
-) => {
+export const createDatabase = async (props: {
+  connection: Connection;
+  name: string;
+  owner: string;
+}) => {
+  const { connection, name, owner } = props;
   console.log("Creating database", name);
-  const client = createClient(connectionInfo);
+  const client = await createClient(connection);
   await client.connect();
 
-  await client.query(format("GRANT %I TO %I", owner, connectionInfo.Username));
-  await client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
+  await postgres.createDatabase({ client, name, owner });
   await client.end();
   console.log("Created database");
 };
 
 export const deleteDatabase = async (
-  connectionInfo: ConnectionInfo,
+  connection: Connection,
   name: string,
   owner: string
 ) => {
   console.log("Deleting database", name);
-  const client = createClient(connectionInfo);
+  const client = await createClient(connection);
   await client.connect();
 
   // First, drop all remaining DB connections
@@ -114,19 +126,17 @@ export const deleteDatabase = async (
   );
   // Then, drop the DB
   await client.query(format("DROP DATABASE %I", name));
-  await client.query(
-    format("REVOKE %I FROM %I", owner, connectionInfo.Username)
-  );
+  // await client.query(format("REVOKE %I FROM %I", owner, connection.Username));
   await client.end();
 };
 
 export const updateDbOwner = async (
-  connectionInfo: ConnectionInfo,
+  connection: Connection,
   name: string,
   owner: string
 ) => {
   console.log(`Updating DB ${name} owner to ${owner}`);
-  const client = createClient(connectionInfo);
+  const client = await createClient(connection);
   await client.connect();
 
   await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));

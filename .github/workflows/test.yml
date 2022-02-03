@@ -1,0 +1,22 @@
+name: Test
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.1.0
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "16.0.0"
+      - name: Install
+        working-directory: ./cdk-postgresql
+        run: |
+          yarn
+      - name: Build
+        working-directory: ./cdk-postgresql
+        run: |
+          yarn build
+      - name: Test
+        working-directory: ./cdk-postgresql
+        run: |
+          yarn test

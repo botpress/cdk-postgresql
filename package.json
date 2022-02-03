@@ -1,37 +1,7 @@
 {
-  "name": "@botpress/cdk-postgresql",
-  "version": "1.109.0",
-  "description": "Postgresql constructs for AWS CDK",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "scripts": {
-    "postinstall": "cd lib/lambda/postgresql && npm i",
-    "build": "tsc",
-    "watch": "tsc -w"
-  },
-  "devDependencies": {
-    "eslint": "6.2.0",
-    "typescript": "3.7.2"
-  },
-  "peerDependencies": {
-    "@aws-cdk/core": "1.109.0"
-  },
-  "dependencies": {
-    "@aws-cdk/aws-iam": "1.109.0",
-    "@aws-cdk/aws-lambda": "1.109.0",
-    "@aws-cdk/aws-logs": "1.109.0",
-    "@aws-cdk/aws-s3": "1.109.0",
-    "@aws-cdk/core": "1.109.0",
-    "@aws-cdk/custom-resources": "1.109.0",
-    "@types/node": "^12.6.2"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js"
-    ]
-  },
-  "author": {
-    "name": "Botpress",
-    "url": "https://github.com/botpress"
-  }
+  "private": true,
+  "workspaces": [
+    "cdk-postgresql",
+    "test-stack"
+  ]
 }
