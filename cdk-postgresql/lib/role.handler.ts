@@ -10,7 +10,7 @@ import {
 import {
   validateConnection,
   hashCode,
-  createClient,
+  getConnectedClient,
   secretsmanager,
 } from "./util";
 import { Connection } from "./lambda.types";
@@ -109,8 +109,7 @@ const generatePhysicalId = (props: Props): string => {
 
 export const deleteRole = async (connection: Connection, name: string) => {
   console.log("Deleting user", name);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   await client.query(format("DROP USER %I", name));
   await client.end();
@@ -122,8 +121,7 @@ export const updateRoleName = async (
   newName: string
 ) => {
   console.log(`Updating role name from ${oldName} to ${newName}`);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   await client.query(format("ALTER ROLE %I RENAME TO %I", oldName, newName));
   await client.end();
@@ -137,8 +135,7 @@ export const updateRolePassword = async (props: {
   const { connection, name, passwordArn } = props;
   console.log("Updating user password", name);
 
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   const { SecretString: password } = await secretsmanager.getSecretValue({
     SecretId: passwordArn,
@@ -155,8 +152,7 @@ export const createRole = async (props: {
 }) => {
   const { connection, name, passwordArn } = props;
   console.log("Creating user", name);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   const { SecretString: password } = await secretsmanager.getSecretValue({
     SecretId: passwordArn,

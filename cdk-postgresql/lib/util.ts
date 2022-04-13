@@ -8,11 +8,49 @@ export const isObject = (obj: any): obj is { [key: string]: any } => {
   return typeof obj === "object" && !Array.isArray(obj) && obj !== null;
 };
 
-export const createClient = async (connection: Connection) => {
+export const getConnectedClient = async (connection: Connection) => {
   console.debug(
     `creating PG client with connection: ${JSON.stringify(connection)}`
   );
 
+  const password = await getPassword(connection);
+
+  const clientProps: ClientConfig = {
+    host: connection.Host,
+    port: connection.Port,
+    user: connection.Username,
+    password,
+    database: connection.Database,
+  };
+
+  console.debug(`clientProps: ${JSON.stringify(clientProps)}`);
+
+  if (connection.SSLMode === "require") {
+    clientProps.ssl = {
+      rejectUnauthorized: false,
+    };
+  }
+
+  let client;
+  let tries = 0;
+  let connected = false;
+  do {
+    tries++;
+    client = new Client(clientProps);
+    try {
+      await client.connect();
+    } catch (err) {
+      console.debug({ err, tries });
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      continue;
+    }
+    connected = true;
+  } while (!connected);
+  console.debug("connected");
+  return client;
+};
+
+const getPassword = async (connection: Connection) => {
   const { SecretString } = await secretsmanager.getSecretValue({
     SecretId: connection.PasswordArn,
   });
@@ -45,23 +83,7 @@ export const createClient = async (connection: Connection) => {
     password = parsedSecret;
   }
 
-  const clientProps: ClientConfig = {
-    host: connection.Host,
-    port: connection.Port,
-    user: connection.Username,
-    password,
-    database: connection.Database,
-  };
-
-  console.debug(`clientProps: ${JSON.stringify(clientProps)}`);
-
-  if (connection.SSLMode === "require") {
-    clientProps.ssl = {
-      rejectUnauthorized: false,
-    };
-  }
-
-  return new Client(clientProps);
+  return password;
 };
 
 export const validateConnection = (connection: Connection) => {

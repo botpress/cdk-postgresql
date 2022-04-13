@@ -104,7 +104,7 @@ export class Provider extends Construct implements iam.IGrantable {
         nodeModules: ["pg", "pg-format"],
       },
       logRetention: logs.RetentionDays.ONE_MONTH,
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.minutes(15),
       vpc,
       securityGroups: handlerSecurityGroups,
     });

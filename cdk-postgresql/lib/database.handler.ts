@@ -1,5 +1,5 @@
 import format from "pg-format";
-import { createClient, validateConnection, hashCode } from "./util";
+import { getConnectedClient, validateConnection, hashCode } from "./util";
 import * as postgres from "./postgres";
 
 import {
@@ -99,8 +99,7 @@ export const createDatabase = async (props: {
 }) => {
   const { connection, name, owner } = props;
   console.log("Creating database", name);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   await postgres.createDatabase({ client, name, owner });
   await client.end();
@@ -113,8 +112,7 @@ export const deleteDatabase = async (
   owner: string
 ) => {
   console.log("Deleting database", name);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   // First, drop all remaining DB connections
   // Sometimes, DB connections are still alive even though the ECS service has been deleted
@@ -136,8 +134,7 @@ export const updateDbOwner = async (
   owner: string
 ) => {
   console.log(`Updating DB ${name} owner to ${owner}`);
-  const client = await createClient(connection);
-  await client.connect();
+  const client = await getConnectedClient(connection);
 
   await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));
   await client.end();
