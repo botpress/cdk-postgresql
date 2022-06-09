@@ -23,8 +23,6 @@ export const getConnectedClient = async (connection: Connection) => {
     database: connection.Database,
   };
 
-  console.debug(`clientProps: ${JSON.stringify(clientProps)}`);
-
   if (connection.SSLMode === "require") {
     clientProps.ssl = {
       rejectUnauthorized: false,
