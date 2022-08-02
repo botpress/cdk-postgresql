@@ -954,6 +954,19 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@botpress/cdk-postgresql@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@botpress/cdk-postgresql/-/cdk-postgresql-2.0.0.tgz#49c804eed7e75a9e2c0056c8a7927c0e8b37750d"
+  integrity sha512-Mrs0R/AzbJ0xX6DFhN/uPEGTSMirfNVamYy9ODCPnQrt3+KtNx3CDljKp5mfto2h0CtthRgCbb+2s4qmlYyo6Q==
+  dependencies:
+    "@aws-sdk/client-secrets-manager" "3.47.2"
+    "@types/aws-lambda" "^8.10.92"
+    "@types/node" "17.0.8"
+    esbuild "^0.14.12"
+    pg "8.7.1"
+    pg-format "1.0.4"
+    verror "^1.10.1"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"
@@ -1428,9 +1441,9 @@ ansi-escapes@^4.2.1:
     type-fest "^0.21.3"
 
 ansi-regex@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-3.0.0.tgz#ed0317c322064f79466c02966bddb605ab37d998"
-  integrity sha1-7QMXwyIGT3lGbAKWa922Bas32Zg=
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-3.0.1.tgz#123d6479e92ad45ad897d4054e3c7ca7db4944e1"
+  integrity sha512-+O9Jct8wf++lXxxFc4hc8LsjaSq0HFzzL7cVsw8pRDIPdjKD2mT4ytDZlLuSBZ4cLKZFXIrMGO7DbQCtMJJMKw==
 
 ansi-regex@^4.1.0:
   version "4.1.0"
