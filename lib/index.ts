@@ -87,7 +87,7 @@ export class Provider extends cdk.Construct {
     super(scope, id);
 
     this.onEventHandler = new lambda.Function(this, "OnEventHandler", {
-      runtime: lambda.Runtime.NODEJS_12_X,
+      runtime: lambda.Runtime.NODEJS_14_X,
       handler: "lib/index.handler",
       code: lambda.Code.fromAsset(path.join(__dirname, "lambda", "postgresql")),
       logRetention: logs.RetentionDays.ONE_MONTH,
