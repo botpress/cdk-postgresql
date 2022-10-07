@@ -109,7 +109,7 @@ export function safeHandler(block: (event: any) => Promise<void>) {
 
       // this is an actual error, fail the activity altogether and exist.
       await submitResponse("FAILED", event, {
-        reason: includeStackTraces ? e.stack : e.message,
+        reason: includeStackTraces ? (e as any).stack : (e as any).message,
       });
     }
   };
