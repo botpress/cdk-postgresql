@@ -954,6 +954,19 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@botpress/cdk-postgresql@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@botpress/cdk-postgresql/-/cdk-postgresql-2.0.0.tgz#49c804eed7e75a9e2c0056c8a7927c0e8b37750d"
+  integrity sha512-Mrs0R/AzbJ0xX6DFhN/uPEGTSMirfNVamYy9ODCPnQrt3+KtNx3CDljKp5mfto2h0CtthRgCbb+2s4qmlYyo6Q==
+  dependencies:
+    "@aws-sdk/client-secrets-manager" "3.47.2"
+    "@types/aws-lambda" "^8.10.92"
+    "@types/node" "17.0.8"
+    esbuild "^0.14.12"
+    pg "8.7.1"
+    pg-format "1.0.4"
+    verror "^1.10.1"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"
@@ -3800,9 +3813,9 @@ minimatch@>=3.0, minimatch@^3.0.4:
     brace-expansion "^1.1.7"
 
 minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.8"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
+  integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
 
 mkdirp-classic@^0.5.2:
   version "0.5.3"
