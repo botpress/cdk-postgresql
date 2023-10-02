@@ -2,7 +2,8 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
+import * as lambdaNode from "aws-cdk-lib/aws-lambda-nodejs";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as cr from "aws-cdk-lib/custom-resources";
@@ -98,7 +99,7 @@ export class Provider extends Construct implements iam.IGrantable {
     const handlerSecurityGroups = handlerSecurityGroup
       ? [handlerSecurityGroup]
       : undefined;
-    const handler = new lambda.NodejsFunction(scope, "handler", {
+    const handler = new lambdaNode.NodejsFunction(scope, "handler", {
       entry: path.join(__dirname, "handler.js"),
       bundling: {
         nodeModules: ["pg", "pg-format"],
@@ -107,6 +108,7 @@ export class Provider extends Construct implements iam.IGrantable {
       timeout: cdk.Duration.minutes(15),
       vpc,
       securityGroups: handlerSecurityGroups,
+      runtime: lambda.Runtime.NODEJS_18_X,
     });
     this.grantPrincipal = handler.grantPrincipal;
 

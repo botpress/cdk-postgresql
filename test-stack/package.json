@@ -14,16 +14,16 @@
   "devDependencies": {
     "@types/jest": "^27.4.0",
     "@types/node": "10.17.27",
-    "aws-cdk": "^2.2.0",
+    "aws-cdk": "2.99.1",
     "jest": "^27.4.7",
     "ts-jest": "^27.1.2",
     "ts-node": "^9.0.0",
     "typescript": "~3.9.7"
   },
   "dependencies": {
-    "@botpress/cdk-postgresql": "2.0.0",
-    "aws-cdk-lib": "^2.2.0",
-    "constructs": "^10.0.0",
+    "@botpress/cdk-postgresql": "2.99.1-1",
+    "aws-cdk-lib": "2.99.1",
+    "constructs": "10.2.70",
     "source-map-support": "^0.5.16"
   }
 }

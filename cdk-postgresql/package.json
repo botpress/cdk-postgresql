@@ -1,6 +1,6 @@
 {
   "name": "@botpress/cdk-postgresql",
-  "version": "2.0.1",
+  "version": "2.99.1-1",
   "description": "Postgresql constructs for AWS CDK",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -19,8 +19,8 @@
     "test": "AWS_REGION=us-east-1 AWS_ACCESS_KEY_ID=something AWS_SECRET_ACCESS_KEY=something jest"
   },
   "peerDependencies": {
-    "aws-cdk-lib": "^2.2.0",
-    "constructs": "^10.0.0"
+    "aws-cdk-lib": "^2.99.1",
+    "constructs": "^10.2.70"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "3.47.2",
@@ -37,8 +37,8 @@
     "@types/pg": "8.6.4",
     "@types/pg-format": "1.0.2",
     "@types/verror": "^1.10.5",
-    "aws-cdk-lib": "^2.2.0",
-    "constructs": "^10.0.0",
+    "aws-cdk-lib": "2.99.1",
+    "constructs": "10.2.70",
     "eslint": "6.2.0",
     "jest": "^27.4.7",
     "ms": "^2.1.3",
