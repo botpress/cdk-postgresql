@@ -15,7 +15,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc && node scripts/bundle-handler.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.99.0",

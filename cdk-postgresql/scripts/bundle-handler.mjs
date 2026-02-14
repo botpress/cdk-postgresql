@@ -20,7 +20,7 @@ await esbuild.build({
   format: 'cjs',
   external: ['@aws-sdk/*'],
   minify: true,
-  sourcemap: true,
+  sourcemap: true
 })
 
 // pg-format uses require(__dirname + '/reserved.js') which esbuild can't resolve statically.

@@ -1,11 +1,11 @@
-import { describe, test, expect } from "vitest";
-import { isObject } from "../lib/util";
+import { describe, test, expect } from 'vitest'
+import { isObject } from '../lib/util'
 
-describe("isObject", () => {
-  test("obj", () => {
-    expect(isObject({})).toEqual(true);
-    expect(isObject({ a: 1 })).toEqual(true);
-    expect(isObject("something")).toEqual(false);
-    expect(isObject(null)).toEqual(false);
-  });
-});
+describe('isObject', () => {
+  test('obj', () => {
+    expect(isObject({})).toEqual(true)
+    expect(isObject({ a: 1 })).toEqual(true)
+    expect(isObject('something')).toEqual(false)
+    expect(isObject(null)).toEqual(false)
+  })
+})

@@ -1,89 +1,83 @@
 import {
   CloudFormationCustomResourceCreateEvent,
   CloudFormationCustomResourceDeleteEvent,
-  CloudFormationCustomResourceUpdateEvent,
-} from "aws-lambda";
+  CloudFormationCustomResourceUpdateEvent
+} from 'aws-lambda'
 
-export type SSLMode = "require" | "disable";
+export type SSLMode = 'require' | 'disable'
 
 export interface Connection {
-  Host: string;
-  Port: number;
-  Username: string;
-  PasswordArn: string;
-  PasswordField?: string;
-  Database: string;
-  SSLMode: SSLMode;
+  Host: string
+  Port: number
+  Username: string
+  PasswordArn: string
+  PasswordField?: string
+  Database: string
+  SSLMode: SSLMode
 }
 
-export interface CreateDatabaseEvent
-  extends CloudFormationCustomResourceCreateEvent {
+export interface CreateDatabaseEvent extends CloudFormationCustomResourceCreateEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    Owner: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    Owner: string
+  }
 }
 
-export interface DeleteDatabaseEvent
-  extends CloudFormationCustomResourceDeleteEvent {
+export interface DeleteDatabaseEvent extends CloudFormationCustomResourceDeleteEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    Owner: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    Owner: string
+  }
 }
 
-export interface UpdateDatabaseEvent
-  extends CloudFormationCustomResourceUpdateEvent {
+export interface UpdateDatabaseEvent extends CloudFormationCustomResourceUpdateEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    Owner: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    Owner: string
+  }
   OldResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    Owner: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    Owner: string
+  }
 }
 
-export interface CreateRoleEvent
-  extends CloudFormationCustomResourceCreateEvent {
+export interface CreateRoleEvent extends CloudFormationCustomResourceCreateEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    PasswordArn: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    PasswordArn: string
+  }
 }
 
-export interface DeleteRoleEvent
-  extends CloudFormationCustomResourceDeleteEvent {
+export interface DeleteRoleEvent extends CloudFormationCustomResourceDeleteEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    PasswordArn: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    PasswordArn: string
+  }
 }
 
-export interface UpdateRoleEvent
-  extends CloudFormationCustomResourceUpdateEvent {
+export interface UpdateRoleEvent extends CloudFormationCustomResourceUpdateEvent {
   ResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    PasswordArn: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    PasswordArn: string
+  }
   OldResourceProperties: {
-    ServiceToken: string;
-    Connection: Connection;
-    Name: string;
-    PasswordArn: string;
-  };
+    ServiceToken: string
+    Connection: Connection
+    Name: string
+    PasswordArn: string
+  }
 }

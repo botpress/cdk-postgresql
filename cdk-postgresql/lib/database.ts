@@ -1,50 +1,50 @@
-import * as cdk from "aws-cdk-lib";
-import { RemovalPolicy } from "aws-cdk-lib";
-import { Construct } from "constructs";
-import { Provider } from "./provider";
+import * as cdk from 'aws-cdk-lib'
+import { RemovalPolicy } from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { Provider } from './provider'
 
 export interface DatabaseProps {
   /**
    * Provider required to connect to the Postgresql server
    */
-  provider: Provider;
+  provider: Provider
 
   /**
    * The name of the database. Must be unique on the PostgreSQL server instance where it is configured.
    */
-  name: string;
+  name: string
 
   /**
    * The role name of the user who will own the database
    */
-  owner: string;
+  owner: string
 
   /**
    * Policy to apply when the database is removed from this stack.
    *
    * @default - The database will be orphaned.
    */
-  removalPolicy?: RemovalPolicy;
+  removalPolicy?: RemovalPolicy
 }
 
 export class Database extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseProps) {
-    super(scope, id);
+    super(scope, id)
 
-    const { provider, name, owner, removalPolicy } = props;
+    const { provider, name, owner, removalPolicy } = props
 
-    const cr = new cdk.CustomResource(this, "CustomResource", {
+    const cr = new cdk.CustomResource(this, 'CustomResource', {
       serviceToken: provider.serviceToken,
-      resourceType: "Custom::Postgresql-Database",
+      resourceType: 'Custom::Postgresql-Database',
       properties: {
         connection: provider.buildConnectionProperty(),
         name,
-        owner,
+        owner
       },
-      pascalCaseProperties: true,
-    });
+      pascalCaseProperties: true
+    })
 
-    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN);
-    cr.node.addDependency(provider);
+    cr.applyRemovalPolicy(removalPolicy || cdk.RemovalPolicy.RETAIN)
+    cr.node.addDependency(provider)
   }
 }

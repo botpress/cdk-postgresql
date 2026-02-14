@@ -1,0 +1,23 @@
+# based on https://gist.github.com/thinkricardo/74f37d82b686de371b0853a5d66d559c
+
+# ignore all files
+*
+
+# include all folders
+!**/
+
+# include files to format
+!*.yaml
+!*.yml
+!*.md
+pnpm-lock.yaml
+
+# exclusions
+**/*.d.ts
+**/cdk.out/**/*
+**/*.gomplate.yaml
+**/README.md
+cloud/lib/docker-image/traefik/plugins/htransformation/**/*
+
+# cdktf
+**/.gen/**

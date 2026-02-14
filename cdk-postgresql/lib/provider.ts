@@ -1,62 +1,62 @@
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as logs from "aws-cdk-lib/aws-logs";
-import * as iam from "aws-cdk-lib/aws-iam";
-import * as cr from "aws-cdk-lib/custom-resources";
-import path from "path";
-import { Connection, SSLMode } from "./lambda.types";
+import * as cdk from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import * as ec2 from 'aws-cdk-lib/aws-ec2'
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
+import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as logs from 'aws-cdk-lib/aws-logs'
+import * as iam from 'aws-cdk-lib/aws-iam'
+import * as cr from 'aws-cdk-lib/custom-resources'
+import path from 'path'
+import { Connection, SSLMode } from './lambda.types'
 
 interface ProviderProps {
   /**
    * The address for the server connection
    */
-  host: string;
+  host: string
 
   /**
    * The port for the server connection
    *
    * @default - 5432
    */
-  port?: number;
+  port?: number
 
   /**
    * Database to connect to
    *
    * @default - "postgres"
    */
-  database?: string;
+  database?: string
 
   /**
    * Username for the server connection
    */
-  username: string;
+  username: string
 
   /**
    * Password for the server connection
    */
-  password: secretsmanager.ISecret;
+  password: secretsmanager.ISecret
 
   /**
    * Field to get from the password, in case the password is a object
    */
-  passwordField?: string;
+  passwordField?: string
 
   /**
    * Set the priority for an SSL connection to the server
    *
    * @default - "require"
    */
-  sslMode?: "require" | "disable";
+  sslMode?: 'require' | 'disable'
 
   /**
    * VPC network to place the Provider Lambda network interfaces
    *
    * @default - "Provider is not placed within a VPC"
    */
-  vpc?: ec2.IVpc;
+  vpc?: ec2.IVpc
 
   /**
    * The Provider Lambda will be granted inbound access
@@ -64,67 +64,58 @@ interface ProviderProps {
    *
    * @default - "The Lambda has no access to any Security Groups"
    */
-  securityGroups?: ec2.ISecurityGroup[];
+  securityGroups?: ec2.ISecurityGroup[]
 }
 
 export class Provider extends Construct implements iam.IGrantable {
-  readonly grantPrincipal: cdk.aws_iam.IPrincipal;
-  readonly serviceToken: string;
+  readonly grantPrincipal: cdk.aws_iam.IPrincipal
+  readonly serviceToken: string
 
-  private readonly host: string;
-  private readonly port: number;
-  private readonly username: string;
-  private readonly database: string;
-  private readonly sslMode: SSLMode;
-  private readonly password: secretsmanager.ISecret;
-  private readonly passwordField?: string;
+  private readonly host: string
+  private readonly port: number
+  private readonly username: string
+  private readonly database: string
+  private readonly sslMode: SSLMode
+  private readonly password: secretsmanager.ISecret
+  private readonly passwordField?: string
 
   constructor(scope: Construct, id: string, props: ProviderProps) {
-    super(scope, id);
+    super(scope, id)
 
-    const { vpc, securityGroups } = props;
+    const { vpc, securityGroups } = props
 
-    this.host = props.host;
-    this.username = props.username;
-    this.port = props.port || 5432;
-    this.database = props.database || "postgres";
-    this.sslMode = props.sslMode || "require";
-    this.password = props.password;
-    this.passwordField = props.passwordField;
+    this.host = props.host
+    this.username = props.username
+    this.port = props.port || 5432
+    this.database = props.database || 'postgres'
+    this.sslMode = props.sslMode || 'require'
+    this.password = props.password
+    this.passwordField = props.passwordField
 
-    const handlerSecurityGroup = vpc
-      ? new ec2.SecurityGroup(this, "HandlerSecurityGroup", { vpc })
-      : undefined;
-    const handlerSecurityGroups = handlerSecurityGroup
-      ? [handlerSecurityGroup]
-      : undefined;
-    const handler = new lambda.Function(scope, "handler", {
-      code: lambda.Code.fromAsset(path.join(__dirname, "handler-bundle")),
-      handler: "index.handler",
+    const handlerSecurityGroup = vpc ? new ec2.SecurityGroup(this, 'HandlerSecurityGroup', { vpc }) : undefined
+    const handlerSecurityGroups = handlerSecurityGroup ? [handlerSecurityGroup] : undefined
+    const handler = new lambda.Function(scope, 'handler', {
+      code: lambda.Code.fromAsset(path.join(__dirname, 'handler-bundle')),
+      handler: 'index.handler',
       runtime: lambda.Runtime.NODEJS_18_X,
       logRetention: logs.RetentionDays.ONE_MONTH,
       timeout: cdk.Duration.minutes(2),
       vpc,
-      securityGroups: handlerSecurityGroups,
-    });
-    this.grantPrincipal = handler.grantPrincipal;
+      securityGroups: handlerSecurityGroups
+    })
+    this.grantPrincipal = handler.grantPrincipal
 
-    this.password.grantRead(handler);
+    this.password.grantRead(handler)
 
-    const provider = new cr.Provider(scope, "cr-provider", {
+    const provider = new cr.Provider(scope, 'cr-provider', {
       onEventHandler: handler,
-      logRetention: logs.RetentionDays.ONE_MONTH,
-    });
-    this.serviceToken = provider.serviceToken;
+      logRetention: logs.RetentionDays.ONE_MONTH
+    })
+    this.serviceToken = provider.serviceToken
 
     if (securityGroups && handlerSecurityGroup) {
       for (const s of securityGroups) {
-        s.addIngressRule(
-          handlerSecurityGroup,
-          ec2.Port.tcp(this.port),
-          "cdk-postgresql provider",
-          true
-        );
+        s.addIngressRule(handlerSecurityGroup, ec2.Port.tcp(this.port), 'cdk-postgresql provider', true)
       }
     }
   }
@@ -137,7 +128,7 @@ export class Provider extends Construct implements iam.IGrantable {
       Database: this.database,
       SSLMode: this.sslMode,
       PasswordArn: this.password.secretArn,
-      PasswordField: this.passwordField,
-    };
+      PasswordField: this.passwordField
+    }
   }
 }

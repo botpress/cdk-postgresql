@@ -19,5 +19,6 @@
     "strictPropertyInitialization": false,
     "esModuleInterop": true
   },
-  "exclude": ["cdk.out", "test"]
+  "include": ["lib"],
+  "exclude": ["cdk.out", "lib/handler-bundle"]
 }
