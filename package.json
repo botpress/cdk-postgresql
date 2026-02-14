@@ -4,7 +4,7 @@
     "cdk-postgresql",
     "test-stack"
   ],
-  "dependencies": {
+  "devDependencies": {
     "prettier": "^3.8.1"
   }
 }
