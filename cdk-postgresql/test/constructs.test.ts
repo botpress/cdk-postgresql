@@ -1,187 +1,179 @@
-import { test } from "@jest/globals";
-import { Template } from "aws-cdk-lib/assertions";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import { Database, Role, Provider } from "../lib";
+import { test } from '@jest/globals'
+import { Template } from 'aws-cdk-lib/assertions'
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
+import * as cdk from 'aws-cdk-lib'
+import { Construct } from 'constructs'
+import { Database, Role, Provider } from '../lib'
 
 class TestStack extends cdk.Stack {
-  readonly exportPrefix: string;
+  readonly exportPrefix: string
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id);
+    super(scope, id)
   }
 }
 
 const getLogicalId = (construct: Construct) =>
-  cdk.Stack.of(construct).getLogicalId(
-    construct.node.defaultChild as cdk.CfnElement
-  );
+  cdk.Stack.of(construct).getLogicalId(construct.node.defaultChild as cdk.CfnElement)
 
-describe("database", () => {
-  test("has correct props", () => {
-    const app = new cdk.App();
-    const stack = new TestStack(app, "Stack");
+describe('database', () => {
+  test('has correct props', () => {
+    const app = new cdk.App()
+    const stack = new TestStack(app, 'Stack')
 
-    const password = new secretsmanager.Secret(stack, "Password");
+    const password = new secretsmanager.Secret(stack, 'Password')
 
-    const host = "somedb.com";
-    const username = "theusername";
-    const name = "mydb";
-    const owner = "theowner";
+    const host = 'somedb.com'
+    const username = 'theusername'
+    const name = 'mydb'
+    const owner = 'theowner'
 
-    const provider = new Provider(stack, "provider", {
+    const provider = new Provider(stack, 'provider', {
       host,
       username,
-      password,
-    });
+      password
+    })
 
-    new Database(stack, "DB", {
+    new Database(stack, 'DB', {
       name,
       owner,
-      provider,
-    });
+      provider
+    })
 
-    const template = Template.fromStack(stack);
-    template.resourceCountIs("Custom::Postgresql-Database", 1);
-    template.hasResourceProperties("Custom::Postgresql-Database", {
+    const template = Template.fromStack(stack)
+    template.resourceCountIs('Custom::Postgresql-Database', 1)
+    template.hasResourceProperties('Custom::Postgresql-Database', {
       Connection: {
         Host: host,
         Port: 5432,
-        Database: "postgres",
+        Database: 'postgres',
         Username: username,
         PasswordArn: {
-          Ref: getLogicalId(password),
+          Ref: getLogicalId(password)
         },
-        SSLMode: "require",
+        SSLMode: 'require'
       },
       Name: name,
-      Owner: owner,
-    });
-  });
+      Owner: owner
+    })
+  })
 
-  test("creates singleton lambda", () => {
-    const app = new cdk.App();
-    const stack = new TestStack(app, "Stack");
+  test('creates singleton lambda', () => {
+    const app = new cdk.App()
+    const stack = new TestStack(app, 'Stack')
 
-    const password = new secretsmanager.Secret(stack, "Password");
+    const password = new secretsmanager.Secret(stack, 'Password')
 
-    const host = "somedb.com";
-    const username = "theusername";
-    const name = "mydb";
-    const owner = "theowner";
-    const n = 5;
+    const host = 'somedb.com'
+    const username = 'theusername'
+    const name = 'mydb'
+    const owner = 'theowner'
+    const n = 5
 
-    const provider = new Provider(stack, "provider", {
+    const provider = new Provider(stack, 'provider', {
       host,
       username,
-      password,
-    });
+      password
+    })
 
     for (let i = 0; i < n; i++) {
       new Database(stack, `DB${i}`, {
         name,
         owner,
-        provider,
-      });
+        provider
+      })
     }
 
-    const template = Template.fromStack(stack);
+    const template = Template.fromStack(stack)
 
     // we expect n DBs
-    template.resourceCountIs("Custom::Postgresql-Database", n);
+    template.resourceCountIs('Custom::Postgresql-Database', n)
 
     // but only 3 Functions:
     // * 1 for the DB handler (created by us)
     // * 1 for the DB provider (created by us)
     // * 1 for the LogRetention (created by the CDK))
-    template.resourceCountIs("AWS::Lambda::Function", 3);
-  });
-});
+    template.resourceCountIs('AWS::Lambda::Function', 3)
+  })
+})
 
-describe("role", () => {
-  test("has correct props", () => {
-    const app = new cdk.App();
-    const stack = new TestStack(app, "Stack");
+describe('role', () => {
+  test('has correct props', () => {
+    const app = new cdk.App()
+    const stack = new TestStack(app, 'Stack')
 
-    const connectionPassword = new secretsmanager.Secret(
-      stack,
-      "ConnectionPassword"
-    );
-    const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
+    const connectionPassword = new secretsmanager.Secret(stack, 'ConnectionPassword')
+    const rolePassword = new secretsmanager.Secret(stack, 'RolePassword')
 
-    const host = "somedb.com";
-    const username = "theusername";
-    const name = "rolename";
-    const provider = new Provider(stack, "provider", {
+    const host = 'somedb.com'
+    const username = 'theusername'
+    const name = 'rolename'
+    const provider = new Provider(stack, 'provider', {
       host,
       username,
-      password: connectionPassword,
-    });
+      password: connectionPassword
+    })
 
-    new Role(stack, "Role", {
+    new Role(stack, 'Role', {
       name,
       password: rolePassword,
-      provider,
-    });
+      provider
+    })
 
-    const template = Template.fromStack(stack);
-    template.resourceCountIs("Custom::Postgresql-Role", 1);
-    template.hasResourceProperties("Custom::Postgresql-Role", {
+    const template = Template.fromStack(stack)
+    template.resourceCountIs('Custom::Postgresql-Role', 1)
+    template.hasResourceProperties('Custom::Postgresql-Role', {
       Connection: {
         Host: host,
         Port: 5432,
-        Database: "postgres",
+        Database: 'postgres',
         Username: username,
         PasswordArn: {
-          Ref: getLogicalId(connectionPassword),
+          Ref: getLogicalId(connectionPassword)
         },
-        SSLMode: "require",
+        SSLMode: 'require'
       },
       Name: name,
       PasswordArn: {
-        Ref: getLogicalId(rolePassword),
-      },
-    });
-  });
+        Ref: getLogicalId(rolePassword)
+      }
+    })
+  })
 
-  test("creates singleton lambda", () => {
-    const app = new cdk.App();
-    const stack = new TestStack(app, "Stack");
+  test('creates singleton lambda', () => {
+    const app = new cdk.App()
+    const stack = new TestStack(app, 'Stack')
 
-    const connectionPassword = new secretsmanager.Secret(
-      stack,
-      "ConnectionPassword"
-    );
-    const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
+    const connectionPassword = new secretsmanager.Secret(stack, 'ConnectionPassword')
+    const rolePassword = new secretsmanager.Secret(stack, 'RolePassword')
 
-    const host = "somedb.com";
-    const username = "theusername";
-    const name = "mydb";
-    const n = 5;
+    const host = 'somedb.com'
+    const username = 'theusername'
+    const name = 'mydb'
+    const n = 5
 
-    const provider = new Provider(stack, "provider", {
+    const provider = new Provider(stack, 'provider', {
       host,
       username,
-      password: connectionPassword,
-    });
+      password: connectionPassword
+    })
 
     for (let i = 0; i < n; i++) {
       new Role(stack, `Role${i}`, {
         name,
         password: rolePassword,
-        provider,
-      });
+        provider
+      })
     }
 
-    const template = Template.fromStack(stack);
+    const template = Template.fromStack(stack)
 
     // we expect n Roles
-    template.resourceCountIs("Custom::Postgresql-Role", n);
+    template.resourceCountIs('Custom::Postgresql-Role', n)
 
     // but only 3 Functions:
     // * 1 for the Role handler (created by us)
     // * 1 for the Role provider (created by us)
     // * 1 for the LogRetention (created by the CDK))
-    template.resourceCountIs("AWS::Lambda::Function", 3);
-  });
-});
+    template.resourceCountIs('AWS::Lambda::Function', 3)
+  })
+})
