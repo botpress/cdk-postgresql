@@ -1,9 +1,11 @@
 import * as esbuild from 'esbuild'
-import { rmSync, mkdirSync } from 'fs'
+import { rmSync, mkdirSync, copyFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { createRequire } from 'module'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const require = createRequire(import.meta.url)
 const outdir = resolve(__dirname, '..', 'lib', 'handler-bundle')
 
 rmSync(outdir, { recursive: true, force: true })
@@ -20,5 +22,10 @@ await esbuild.build({
   minify: true,
   sourcemap: true,
 })
+
+// pg-format uses require(__dirname + '/reserved.js') which esbuild can't resolve statically.
+// Copy it alongside the bundle so the runtime require works.
+const pgFormatDir = dirname(require.resolve('pg-format'))
+copyFileSync(resolve(pgFormatDir, 'reserved.js'), resolve(outdir, 'reserved.js'))
 
 console.log('Bundled handler lambda')

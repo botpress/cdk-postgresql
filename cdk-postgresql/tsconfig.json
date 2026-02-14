@@ -19,5 +19,5 @@
     "strictPropertyInitialization": false,
     "esModuleInterop": true
   },
-  "exclude": ["cdk.out"]
+  "exclude": ["cdk.out", "test"]
 }
