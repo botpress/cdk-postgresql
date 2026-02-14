@@ -1,4 +1,4 @@
-import { test } from "@jest/globals";
+import { describe, test, expect } from "vitest";
 import { Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
@@ -6,7 +6,6 @@ import { Construct } from "constructs";
 import { Database, Role, Provider } from "../lib";
 
 class TestStack extends cdk.Stack {
-  readonly exportPrefix: string;
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id);
   }
@@ -90,10 +89,9 @@ describe("database", () => {
     // we expect n DBs
     template.resourceCountIs("Custom::Postgresql-Database", n);
 
-    // but only 3 Functions:
+    // but only 2 Functions:
     // * 1 for the DB handler (created by us)
-    // * 1 for the DB provider (created by us)
-    // * 1 for the LogRetention (created by the CDK))
+    // * 1 for the DB provider framework (created by CDK custom resources)
     template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });
@@ -178,10 +176,9 @@ describe("role", () => {
     // we expect n Roles
     template.resourceCountIs("Custom::Postgresql-Role", n);
 
-    // but only 3 Functions:
+    // but only 2 Functions:
     // * 1 for the Role handler (created by us)
-    // * 1 for the Role provider (created by us)
-    // * 1 for the LogRetention (created by the CDK))
+    // * 1 for the Role provider framework (created by CDK custom resources)
     template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });

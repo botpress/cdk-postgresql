@@ -24,5 +24,4 @@ catalog:
   "@types/verror": 1.10.10
 
   # Testing
-  jest: 29.7.0
-  ts-jest: 29.2.5
+  vitest: 2.1.8
