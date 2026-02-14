@@ -110,9 +110,11 @@ const generatePhysicalId = (props: Props): string => {
 export const deleteRole = async (connection: Connection, name: string) => {
   console.log("Deleting user", name);
   const client = await getConnectedClient(connection);
-
-  await client.query(format("DROP USER %I", name));
-  await client.end();
+  try {
+    await client.query(format("DROP USER %I", name));
+  } finally {
+    await client.end();
+  }
 };
 
 export const updateRoleName = async (
@@ -122,9 +124,11 @@ export const updateRoleName = async (
 ) => {
   console.log(`Updating role name from ${oldName} to ${newName}`);
   const client = await getConnectedClient(connection);
-
-  await client.query(format("ALTER ROLE %I RENAME TO %I", oldName, newName));
-  await client.end();
+  try {
+    await client.query(format("ALTER ROLE %I RENAME TO %I", oldName, newName));
+  } finally {
+    await client.end();
+  }
 };
 
 export const updateRolePassword = async (props: {
@@ -136,13 +140,15 @@ export const updateRolePassword = async (props: {
   console.log("Updating user password", name);
 
   const client = await getConnectedClient(connection);
+  try {
+    const { SecretString: password } = await secretsmanager.getSecretValue({
+      SecretId: passwordArn,
+    });
 
-  const { SecretString: password } = await secretsmanager.getSecretValue({
-    SecretId: passwordArn,
-  });
-
-  await client.query(format("ALTER USER %I WITH PASSWORD %L", name, password));
-  await client.end();
+    await client.query(format("ALTER USER %I WITH PASSWORD %L", name, password));
+  } finally {
+    await client.end();
+  }
 };
 
 export const createRole = async (props: {
@@ -153,15 +159,16 @@ export const createRole = async (props: {
   const { connection, name, passwordArn } = props;
   console.log("Creating user", name);
   const client = await getConnectedClient(connection);
+  try {
+    const { SecretString: password } = await secretsmanager.getSecretValue({
+      SecretId: passwordArn,
+    });
+    if (!password) {
+      throw new Error("could not decrypt password");
+    }
 
-  const { SecretString: password } = await secretsmanager.getSecretValue({
-    SecretId: passwordArn,
-  });
-  if (!password) {
-    throw new Error("could not decrypt password");
+    await postgres.createRole({ client, name, password });
+  } finally {
+    await client.end();
   }
-
-  await postgres.createRole({ client, name, password });
-
-  await client.end();
 };

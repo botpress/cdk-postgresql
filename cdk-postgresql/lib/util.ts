@@ -8,6 +8,9 @@ export const isObject = (obj: any): obj is { [key: string]: any } => {
   return typeof obj === "object" && !Array.isArray(obj) && obj !== null;
 };
 
+const MAX_RETRIES = 12;
+const RETRY_DELAY_MS = 5000;
+
 export const getConnectedClient = async (connection: Connection) => {
   console.debug(
     `creating PG client with connection: ${JSON.stringify(connection)}`
@@ -30,22 +33,25 @@ export const getConnectedClient = async (connection: Connection) => {
   }
 
   let client;
-  let tries = 0;
-  let connected = false;
-  do {
-    tries++;
+  let lastError: unknown;
+  for (let tries = 1; tries <= MAX_RETRIES; tries++) {
     client = new Client(clientProps);
     try {
       await client.connect();
+      console.debug("connected");
+      return client;
     } catch (err) {
-      console.debug({ err, tries });
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      continue;
+      lastError = err;
+      console.debug({ err, tries, maxRetries: MAX_RETRIES });
+      try { await client.end(); } catch { /* ignore cleanup errors */ }
+      if (tries < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
     }
-    connected = true;
-  } while (!connected);
-  console.debug("connected");
-  return client;
+  }
+  throw new Error(
+    `Failed to connect to PostgreSQL after ${MAX_RETRIES} attempts: ${lastError}`
+  );
 };
 
 const getPassword = async (connection: Connection) => {

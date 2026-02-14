@@ -100,10 +100,12 @@ export const createDatabase = async (props: {
   const { connection, name, owner } = props;
   console.log("Creating database", name);
   const client = await getConnectedClient(connection);
-
-  await postgres.createDatabase({ client, name, owner });
-  await client.end();
-  console.log("Created database");
+  try {
+    await postgres.createDatabase({ client, name, owner });
+    console.log("Created database");
+  } finally {
+    await client.end();
+  }
 };
 
 export const deleteDatabase = async (
@@ -113,19 +115,20 @@ export const deleteDatabase = async (
 ) => {
   console.log("Deleting database", name);
   const client = await getConnectedClient(connection);
-
-  // First, drop all remaining DB connections
-  // Sometimes, DB connections are still alive even though the ECS service has been deleted
-  await client.query(
-    format(
-      "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname=%L",
-      name
-    )
-  );
-  // Then, drop the DB
-  await client.query(format("DROP DATABASE %I", name));
-  // await client.query(format("REVOKE %I FROM %I", owner, connection.Username));
-  await client.end();
+  try {
+    // First, drop all remaining DB connections
+    // Sometimes, DB connections are still alive even though the ECS service has been deleted
+    await client.query(
+      format(
+        "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname=%L",
+        name
+      )
+    );
+    // Then, drop the DB
+    await client.query(format("DROP DATABASE %I", name));
+  } finally {
+    await client.end();
+  }
 };
 
 export const updateDbOwner = async (
@@ -135,7 +138,9 @@ export const updateDbOwner = async (
 ) => {
   console.log(`Updating DB ${name} owner to ${owner}`);
   const client = await getConnectedClient(connection);
-
-  await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));
-  await client.end();
+  try {
+    await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));
+  } finally {
+    await client.end();
+  }
 };
