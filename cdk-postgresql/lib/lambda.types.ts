@@ -42,6 +42,7 @@ export interface UpdateDatabaseEvent extends CloudFormationCustomResourceUpdateE
     Owner: string
   }
   OldResourceProperties: {
+    ServiceToken: string
     Connection: Connection
     Name: string
     Owner: string
@@ -74,6 +75,7 @@ export interface UpdateRoleEvent extends CloudFormationCustomResourceUpdateEvent
     PasswordArn: string
   }
   OldResourceProperties: {
+    ServiceToken: string
     Connection: Connection
     Name: string
     PasswordArn: string

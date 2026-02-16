@@ -1,8 +1,8 @@
+import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { handler as dbHandler } from '../lib/database.handler'
-import { handler as roleHandler, updateRoleName } from '../lib/role.handler'
+import { handler as roleHandler } from '../lib/role.handler'
 const utilModule = require('../lib/util')
 import { GenericContainer, StartedTestContainer } from 'testcontainers'
-import ms from 'ms'
 import {
   CreateDatabaseEvent,
   CreateRoleEvent,
@@ -32,10 +32,10 @@ let pgPort: number
 beforeEach(async () => {
   pgContainer = await new GenericContainer('postgres')
     .withExposedPorts(DB_PORT)
-    .withEnv('POSTGRES_PASSWORD', DB_MASTER_PASSWORD)
+    .withEnvironment({ POSTGRES_PASSWORD: DB_MASTER_PASSWORD })
     .start()
   localstackContainer = await new GenericContainer('localstack/localstack')
-    .withEnv('SERVICES', 'secretsmanager')
+    .withEnvironment({ SERVICES: 'secretsmanager' })
     .withExposedPorts(4566)
     .start()
 
@@ -47,7 +47,7 @@ beforeEach(async () => {
   })
   utilModule.secretsmanager = secretsManager
   masterPasswordArn = await createSecret(secretsmanager, DB_MASTER_PASSWORD)
-}, ms('2m'))
+}, 120_000)
 
 afterEach(async () => {
   await pgContainer.stop()
@@ -86,7 +86,6 @@ describe('role', () => {
 
     await roleHandler(event)
 
-    // try connecting as the new role
     const client = new Client({
       host: pgHost,
       port: pgPort,
@@ -95,7 +94,6 @@ describe('role', () => {
       password: newRolePwd
     })
     await client.connect()
-
     await client.end()
   })
 
@@ -137,14 +135,12 @@ describe('role', () => {
           SSLMode: 'disable'
         },
         Name: newRoleName,
-        PasswordArn: '' // can be empty for tests
+        PasswordArn: ''
       }
     }
 
     await roleHandler(event)
-
     expect(await roleExists(masterClient, newRoleName)).toEqual(false)
-
     await masterClient.end()
   })
 
@@ -194,6 +190,7 @@ describe('role', () => {
         PasswordArn: updatedRolePwdArn
       },
       OldResourceProperties: {
+        ServiceToken: '',
         Connection: {
           Host: pgHost,
           Port: pgPort,
@@ -203,13 +200,12 @@ describe('role', () => {
           SSLMode: 'disable'
         },
         Name: roleName,
-        PasswordArn: '' // can be empty for tests
+        PasswordArn: ''
       }
     }
 
     await roleHandler(event)
 
-    // try connecting as the updated role
     const client = new Client({
       host: pgHost,
       port: pgPort,
@@ -218,7 +214,6 @@ describe('role', () => {
       password: updatedRolePwd
     })
     await client.connect()
-
     await client.end()
     await masterClient.end()
   })
@@ -228,16 +223,9 @@ describe('role', () => {
     const masterpassword = 'masterpwd'
     const passwordField = 'myfield'
 
-    // the master password is in a secret object
-    const masterPasswordArn = await createSecret(
-      secretsmanager,
-      JSON.stringify({
-        [passwordField]: masterpassword
-      })
-    )
+    const masterPasswordArn = await createSecret(secretsmanager, JSON.stringify({ [passwordField]: masterpassword }))
 
     const rolePasswordArn = await createSecret(secretsmanager, newRolePwd)
-
     const newRoleName = 'myuser'
 
     const event: CreateRoleEvent = {
@@ -266,7 +254,6 @@ describe('role', () => {
 
     await roleHandler(event)
 
-    // try connecting as the new role
     const client = new Client({
       host: pgHost,
       port: pgPort,
@@ -275,7 +262,6 @@ describe('role', () => {
       password: newRolePwd
     })
     await client.connect()
-
     await client.end()
   })
 })
@@ -316,9 +302,7 @@ describe('database', () => {
       password: DB_MASTER_PASSWORD
     })
     await client.connect()
-
     expect(await dbExists(client, newDbName)).toEqual(true)
-
     await client.end()
   })
 
@@ -364,8 +348,6 @@ describe('database', () => {
     }
 
     await dbHandler(event)
-
-    console.log('checking if db exists')
     expect(await dbExists(masterClient, newDbName)).toEqual(false)
     await masterClient.end()
   })
@@ -384,23 +366,9 @@ describe('database', () => {
     const newDbRole = 'myrole'
     const updatedDbRole = newDbRole + 'updated'
 
-    await createRole({
-      client: masterClient,
-      name: newDbRole,
-      password: '12345'
-    })
-
-    await createRole({
-      client: masterClient,
-      name: updatedDbRole,
-      password: '12345'
-    })
-
-    await createDatabase({
-      client: masterClient,
-      name: newDbName,
-      owner: newDbRole
-    })
+    await createRole({ client: masterClient, name: newDbRole, password: '12345' })
+    await createRole({ client: masterClient, name: updatedDbRole, password: '12345' })
+    await createDatabase({ client: masterClient, name: newDbName, owner: newDbRole })
 
     const event: UpdateDatabaseEvent = {
       RequestType: 'Update',
@@ -425,6 +393,7 @@ describe('database', () => {
         Owner: updatedDbRole
       },
       OldResourceProperties: {
+        ServiceToken: '',
         Connection: {
           Host: pgHost,
           Port: pgPort,
@@ -439,7 +408,6 @@ describe('database', () => {
     }
 
     await dbHandler(event)
-
     expect(await getDbOwner(masterClient, newDbName)).toEqual(updatedDbRole)
     await masterClient.end()
   })

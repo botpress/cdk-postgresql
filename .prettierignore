@@ -15,4 +15,3 @@ pnpm-lock.yaml
 **/cdk.out/**/*
 **/*.gomplate.yaml
 **/README.md
-

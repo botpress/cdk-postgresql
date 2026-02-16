@@ -1,9 +1,9 @@
 {
   "private": true,
-  "workspaces": [
-    "cdk-postgresql",
-    "test-stack"
-  ],
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "build": "pnpm --filter @botpress/cdk-postgresql run build"
+  },
   "devDependencies": {
     "prettier": "^3.8.1"
   }

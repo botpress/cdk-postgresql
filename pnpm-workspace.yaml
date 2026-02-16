@@ -1,0 +1,27 @@
+packages:
+  - cdk-postgresql
+  - test-stack
+
+onlyBuiltDependencies:
+  - esbuild
+
+catalog:
+  # Build tooling
+  typescript: 5.4.5
+  esbuild: 0.20.1
+
+  # AWS CDK
+  aws-cdk-lib: 2.161.1
+  constructs: 10.3.0
+
+  # Types
+  '@types/node': 18.16.0
+  '@types/aws-lambda': 8.10.115
+  '@types/jest': 29.5.14
+  '@types/ms': 0.7.34
+  '@types/pg': 8.11.11
+  '@types/pg-format': 1.0.5
+  '@types/verror': 1.10.10
+
+  # Testing
+  vitest: 2.1.8

@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest'
 import { isObject } from '../lib/util'
 
 describe('isObject', () => {

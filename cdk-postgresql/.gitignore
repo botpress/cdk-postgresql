@@ -1,11 +1,2 @@
-*.js
-!jest.config.js
-!lib/lambda/**/*.ts
-*.d.ts
-node_modules
-
-# CDK asset staging directory
-.cdk.staging
-cdk.out
-
-.DS_Store
+# Build artifacts
+lib/handler-bundle
