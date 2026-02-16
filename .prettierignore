@@ -1,0 +1,18 @@
+# ignore all files
+*
+
+# include all folders
+!**/
+
+# include files to format
+!*.yaml
+!*.yml
+!*.md
+pnpm-lock.yaml
+
+# exclusions
+**/*.d.ts
+**/cdk.out/**/*
+**/*.gomplate.yaml
+**/README.md
+

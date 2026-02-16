@@ -3,5 +3,8 @@
   "workspaces": [
     "cdk-postgresql",
     "test-stack"
-  ]
+  ],
+  "devDependencies": {
+    "prettier": "^3.8.1"
+  }
 }
