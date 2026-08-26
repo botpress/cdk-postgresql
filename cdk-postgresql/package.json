@@ -34,7 +34,7 @@
     "check:type": "pnpm exec tsc --noEmit",
     "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "pnpm run build && pnpm exec vitest --run --project=unit",
-    "test:integration": "pnpm exec vitest --run --project=integration",
+    "test:integration": "pnpm run build && pnpm exec vitest --run --project=integration",
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
@@ -44,7 +44,6 @@
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "3.1116.0",
     "pg": "8.23.0",
-    "pg-format": "1.0.4",
     "verror": "^1.10.1"
   },
   "devDependencies": {
@@ -52,7 +51,6 @@
     "@types/node": "22.13.14",
     "@types/ms": "^2.1.0",
     "@types/pg": "8.23.0",
-    "@types/pg-format": "1.0.5",
     "@types/verror": "^1.10.11",
     "aws-cdk-lib": "^2.266.0",
     "constructs": "^10.8.1",

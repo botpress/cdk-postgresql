@@ -15,6 +15,7 @@ import { createDatabase, createRole } from "../lib/postgres";
 import { createSecret, dbExists, getDbOwner, roleExists } from "./helpers";
 import { secretsmanager } from "../lib/util";
 import { beforeEach, afterEach, describe, test, expect, vi } from "vitest";
+import { createRequire } from "node:module";
 
 const DB_PORT = 5432;
 const DB_MASTER_USERNAME = "postgres";
@@ -446,5 +447,56 @@ describe("database", () => {
 
     expect(await getDbOwner(masterClient, newDbName)).toEqual(updatedDbRole);
     await masterClient.end();
+  });
+});
+
+// The built asset is what actually gets deployed, and bundling can break it in
+// ways the source cannot reproduce, so it gets exercised the way the lambda
+// runtime loads it:
+describe("built lambda asset", () => {
+  test("creates a working role", async () => {
+    // Arrange
+    const roleName = "assetuser";
+    const rolePwd = "assetrolepwd";
+    const rolePasswordArn = await createSecret(secretsmanager, rolePwd);
+    const event: CreateRoleEvent = {
+      RequestType: "Create",
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      ResourceType: "Custom::Postgresql-Role",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Name: roleName,
+        PasswordArn: rolePasswordArn,
+      },
+    };
+
+    // Act
+    const { handler } = createRequire(import.meta.url)("../dist/lambda/index.cjs");
+    await handler(event);
+
+    // Assert
+    const asNewRole = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: roleName,
+      password: rolePwd,
+    });
+    await asNewRole.connect();
+    const { rows } = await asNewRole.query("SELECT current_user");
+    await asNewRole.end();
+    expect(rows[0].current_user).toEqual(roleName);
   });
 });

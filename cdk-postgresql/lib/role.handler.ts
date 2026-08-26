@@ -1,4 +1,4 @@
-import format from "pg-format";
+import { escapeIdentifier, escapeLiteral } from "pg";
 
 import {
   CloudFormationCustomResourceEvent,
@@ -111,7 +111,7 @@ export const deleteRole = async (connection: Connection, name: string) => {
   console.log("Deleting user", name);
   const client = await getConnectedClient(connection);
 
-  await client.query(format("DROP USER %I", name));
+  await client.query(`DROP USER ${escapeIdentifier(name)}`);
   await client.end();
 };
 
@@ -123,7 +123,9 @@ export const updateRoleName = async (
   console.log(`Updating role name from ${oldName} to ${newName}`);
   const client = await getConnectedClient(connection);
 
-  await client.query(format("ALTER ROLE %I RENAME TO %I", oldName, newName));
+  await client.query(
+    `ALTER ROLE ${escapeIdentifier(oldName)} RENAME TO ${escapeIdentifier(newName)}`
+  );
   await client.end();
 };
 
@@ -140,8 +142,13 @@ export const updateRolePassword = async (props: {
   const { SecretString: password } = await secretsmanager.getSecretValue({
     SecretId: passwordArn,
   });
+  if (!password) {
+    throw new Error("could not decrypt password");
+  }
 
-  await client.query(format("ALTER USER %I WITH PASSWORD %L", name, password));
+  await client.query(
+    `ALTER USER ${escapeIdentifier(name)} WITH PASSWORD ${escapeLiteral(password)}`
+  );
   await client.end();
 };
 

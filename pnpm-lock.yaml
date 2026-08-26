@@ -6,11 +6,7 @@ settings:
 
 importers:
 
-  .:
-    devDependencies:
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
+  .: {}
 
   cdk-postgresql:
     dependencies:
@@ -20,9 +16,6 @@ importers:
       pg:
         specifier: 8.23.0
         version: 8.23.0
-      pg-format:
-        specifier: 1.0.4
-        version: 1.0.4
       verror:
         specifier: ^1.10.1
         version: 1.10.1
@@ -39,9 +32,6 @@ importers:
       '@types/pg':
         specifier: 8.23.0
         version: 8.23.0
-      '@types/pg-format':
-        specifier: 1.0.5
-        version: 1.0.5
       '@types/verror':
         specifier: ^1.10.11
         version: 1.10.11
@@ -583,9 +573,6 @@ packages:
 
   '@types/node@22.13.14':
     resolution: {integrity: sha512-Zs/Ollc1SJ8nKUAgc7ivOEdIBM8JAKgrqqUYi2J997JuKO7/tpQC+WCetQ1sypiKCQWHdvdg9wBNpUPEWZae7w==}
-
-  '@types/pg-format@1.0.5':
-    resolution: {integrity: sha512-i+oEEJEC+1I3XAhgqtVp45Faj8MBbV0Aoq4rHsHD7avgLjyDkaWKObd514g0Q/DOUkdxU0P4CQ0iq2KR4SoJcw==}
 
   '@types/pg@8.23.0':
     resolution: {integrity: sha512-gPGYzOgqj8wcPJ3GSojYWD1i3wjym3ezWgis/Zk2gY8u29x9tEsP3oaBYFwqsFYmKOm6sawDu3IHNwladQc0ig==}
@@ -1596,10 +1583,6 @@ packages:
 
   pg-connection-string@2.14.0:
     resolution: {integrity: sha512-XwWDGcLRGCXAR8F/AM5bG7Q+A3Wm2s6QeEjlOKZLlH3UYcguiqCWKyWXVag5TLTIjR7oOJUY8kcADaZgWPyLeg==}
-
-  pg-format@1.0.4:
-    resolution: {integrity: sha512-YyKEF78pEA6wwTAqOUaHIN/rWpfzzIuMh9KdAhc3rSLQ/7zkRFcCgYBAEGatDstLyZw4g0s9SNICmaTGnBVeyw==}
-    engines: {node: '>=4.0'}
 
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
@@ -2651,8 +2634,6 @@ snapshots:
     dependencies:
       undici-types: 6.20.0
 
-  '@types/pg-format@1.0.5': {}
-
   '@types/pg@8.23.0':
     dependencies:
       '@types/node': 22.13.14
@@ -3137,6 +3118,7 @@ snapshots:
       '@esbuild/win32-arm64': 0.28.2
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
+    optional: true
 
   escalade@3.2.0: {}
 
@@ -3551,8 +3533,6 @@ snapshots:
     optional: true
 
   pg-connection-string@2.14.0: {}
-
-  pg-format@1.0.4: {}
 
   pg-int8@1.0.1: {}
 

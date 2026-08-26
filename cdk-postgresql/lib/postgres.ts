@@ -1,6 +1,5 @@
 import { VError } from "verror";
-import { Client, DatabaseError } from "pg";
-import format from "pg-format";
+import { Client, DatabaseError, escapeIdentifier, escapeLiteral } from "pg";
 import * as util from "util";
 
 const isDatabaseError = (e: any): e is DatabaseError => {
@@ -14,7 +13,9 @@ export const createRole = async (props: {
 }) => {
   const { client, name, password } = props;
 
-  await client.query(format("CREATE USER %I WITH PASSWORD %L", name, password));
+  await client.query(
+    `CREATE USER ${escapeIdentifier(name)} WITH PASSWORD ${escapeLiteral(password)}`
+  );
 };
 
 export const createDatabase = async (props: {
@@ -24,8 +25,15 @@ export const createDatabase = async (props: {
 }) => {
   const { client, name, owner } = props;
 
+  const grantee = client.user;
+  if (!grantee) {
+    throw new VError("the connection has no user to grant the owner role to");
+  }
+
   try {
-    await client.query(format("GRANT %I TO %I", owner, client.user));
+    await client.query(
+      `GRANT ${escapeIdentifier(owner)} TO ${escapeIdentifier(grantee)}`
+    );
   } catch (e) {
     if (!util.types.isNativeError(e)) {
       throw e;
@@ -34,7 +42,7 @@ export const createDatabase = async (props: {
       !isDatabaseError(e) ||
       !(
         e.code === "0LP01" &&
-        e.message === `role "${owner}" is a member of role "${client.user}"`
+        e.message === `role "${owner}" is a member of role "${grantee}"`
       )
     ) {
       throw new VError(e, "unexpected error while creating grant");
@@ -43,5 +51,7 @@ export const createDatabase = async (props: {
     console.warn(e.message);
   }
 
-  return client.query(format("CREATE DATABASE %I WITH OWNER %I", name, owner));
+  return client.query(
+    `CREATE DATABASE ${escapeIdentifier(name)} WITH OWNER ${escapeIdentifier(owner)}`
+  );
 };
