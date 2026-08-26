@@ -143,7 +143,7 @@ export const updateRolePassword = async (props: {
     SecretId: passwordArn,
   });
   if (!password) {
-    throw new Error("could not decrypt password");
+    throw new Error(`secret ${passwordArn} has no SecretString value`);
   }
 
   await client.query(
@@ -165,7 +165,7 @@ export const createRole = async (props: {
     SecretId: passwordArn,
   });
   if (!password) {
-    throw new Error("could not decrypt password");
+    throw new Error(`secret ${passwordArn} has no SecretString value`);
   }
 
   await postgres.createRole({ client, name, password });
