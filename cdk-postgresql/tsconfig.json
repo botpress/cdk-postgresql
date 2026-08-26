@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
-    "module": "commonjs",
-    "lib": ["es2016", "es2017.object", "es2017.string"],
+    "target": "es2022",
+    "module": "esnext",
+    "lib": ["es2022"],
+    "moduleResolution": "bundler",
     "declaration": true,
     "strict": true,
     "noImplicitAny": true,
@@ -17,7 +18,10 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "exclude": ["cdk.out"]
+  "include": ["lib", "test", "tsdown.config.ts", "vitest.config.ts"]
 }

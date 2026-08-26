@@ -1,0 +1,38 @@
+name: Publish Package
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: ['master']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish-api:
+    runs-on: depot-ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_OPTIONS: '--max_old_space_size=8192'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
+
+      - name: Install
+        working-directory: ./cdk-postgresql
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Build
+        working-directory: ./cdk-postgresql
+        run: |
+          pnpm build
+
+      - name: Publish
+        uses: botpress/gh-actions/publish-if-not-exists@master
+        env:
+          NPM_CONFIG_PROVENANCE: 'false'
+        with:
+          path: './cdk-postgresql'
+          package_manager: pnpm

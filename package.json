@@ -1,7 +1,11 @@
 {
   "private": true,
-  "workspaces": [
-    "cdk-postgresql",
-    "test-stack"
-  ]
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm -r --if-present check",
+    "test": "pnpm -r --if-present test"
+  }
 }

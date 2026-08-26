@@ -4,19 +4,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.1.0
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "16.0.0"
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - name: Install
-        working-directory: ./cdk-postgresql
-        run: |
-          yarn
+        run: pnpm install --frozen-lockfile
       - name: Build
-        working-directory: ./cdk-postgresql
-        run: |
-          yarn build
-      - name: Test
-        working-directory: ./cdk-postgresql
-        run: |
-          yarn test
+        run: pnpm build
+      - name: Check
+        run: pnpm check
+      - name: Unit tests
+        run: pnpm --filter @botpress/cdk-postgresql test:unit
+      - name: Integration tests
+        run: pnpm --filter @botpress/cdk-postgresql test:integration
+      - name: Synthesize test stack
+        run: pnpm --filter myapp synth
+        env:
+          STACK_NAME: ci
