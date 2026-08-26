@@ -3,7 +3,7 @@ import { Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Database, Role, Provider } from "../lib";
+import { Database, Role, Provider, RoleMembership } from "../lib";
 
 class TestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -174,5 +174,85 @@ describe("role", () => {
     // * 1 for the Role provider (created by us)
     // * 1 for the LogRetention (created by the CDK)
     template.resourceCountIs("AWS::Lambda::Function", 3);
+  });
+});
+
+describe(RoleMembership, () => {
+  const buildStackWithProvider = () => {
+    const stack = new TestStack(new cdk.App(), "Stack");
+    const connectionPassword = new secretsmanager.Secret(stack, "ConnectionPassword");
+    const provider = new Provider(stack, "provider", {
+      host: "somedb.com",
+      username: "theusername",
+      password: connectionPassword,
+    });
+    return { stack, provider, connectionPassword };
+  };
+
+  test("creates a custom resource carrying the connection, role and member", () => {
+    // Arrange
+    const { stack, provider, connectionPassword } = buildStackWithProvider();
+
+    // Act
+    new RoleMembership(stack, "RoleMembership", {
+      provider,
+      role: "rds_replication",
+      member: "myrole",
+    });
+
+    // Assert
+    const template = Template.fromStack(stack);
+    template.resourceCountIs("Custom::Postgresql-RoleMembership", 1);
+    template.hasResourceProperties("Custom::Postgresql-RoleMembership", {
+      Connection: {
+        Host: "somedb.com",
+        Port: 5432,
+        Database: "postgres",
+        Username: "theusername",
+        PasswordArn: {
+          Ref: getLogicalId(connectionPassword),
+        },
+        SSLMode: "require",
+      },
+      Role: "rds_replication",
+      Member: "myrole",
+    });
+  });
+
+  test("revokes the membership when it is removed from the stack", () => {
+    // Arrange
+    const { stack, provider } = buildStackWithProvider();
+
+    // Act
+    new RoleMembership(stack, "RoleMembership", {
+      provider,
+      role: "rds_replication",
+      member: "myrole",
+    });
+
+    // Assert
+    const template = Template.fromStack(stack);
+    template.hasResource("Custom::Postgresql-RoleMembership", {
+      DeletionPolicy: "Delete",
+    });
+  });
+
+  test("keeps the membership when the removal policy is retain", () => {
+    // Arrange
+    const { stack, provider } = buildStackWithProvider();
+
+    // Act
+    new RoleMembership(stack, "RoleMembership", {
+      provider,
+      role: "rds_replication",
+      member: "myrole",
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Assert
+    const template = Template.fromStack(stack);
+    template.hasResource("Custom::Postgresql-RoleMembership", {
+      DeletionPolicy: "Retain",
+    });
   });
 });

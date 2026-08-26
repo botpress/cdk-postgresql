@@ -55,3 +55,27 @@ export const createDatabase = async (props: {
     `CREATE DATABASE ${escapeIdentifier(name)} WITH OWNER ${escapeIdentifier(owner)}`
   );
 };
+
+export const grantRoleMembership = async (props: {
+  client: Client;
+  role: string;
+  member: string;
+}) => {
+  const { client, role, member } = props;
+
+  await client.query(
+    `GRANT ${escapeIdentifier(role)} TO ${escapeIdentifier(member)}`
+  );
+};
+
+export const revokeRoleMembership = async (props: {
+  client: Client;
+  role: string;
+  member: string;
+}) => {
+  const { client, role, member } = props;
+
+  await client.query(
+    `REVOKE ${escapeIdentifier(role)} FROM ${escapeIdentifier(member)}`
+  );
+};
