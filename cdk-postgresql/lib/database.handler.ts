@@ -1,4 +1,4 @@
-import format from "pg-format";
+import { escapeIdentifier } from "pg";
 import { getConnectedClient, validateConnection, hashCode } from "./util";
 import * as postgres from "./postgres";
 
@@ -117,14 +117,11 @@ export const deleteDatabase = async (
   // First, drop all remaining DB connections
   // Sometimes, DB connections are still alive even though the ECS service has been deleted
   await client.query(
-    format(
-      "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname=%L",
-      name
-    )
+    "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE datname=$1",
+    [name]
   );
   // Then, drop the DB
-  await client.query(format("DROP DATABASE %I", name));
-  // await client.query(format("REVOKE %I FROM %I", owner, connection.Username));
+  await client.query(`DROP DATABASE ${escapeIdentifier(name)}`);
   await client.end();
 };
 
@@ -136,6 +133,8 @@ export const updateDbOwner = async (
   console.log(`Updating DB ${name} owner to ${owner}`);
   const client = await getConnectedClient(connection);
 
-  await client.query(format("ALTER DATABASE %I OWNER TO %I", name, owner));
+  await client.query(
+    `ALTER DATABASE ${escapeIdentifier(name)} OWNER TO ${escapeIdentifier(owner)}`
+  );
   await client.end();
 };

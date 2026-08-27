@@ -1,8 +1,5 @@
 {
   "private": true,
-  "devDependencies": {
-    "esbuild": "^0.28.2"
-  },
   "scripts": {
     "build": "pnpm -r --if-present build",
     "check": "pnpm -r --if-present check",
