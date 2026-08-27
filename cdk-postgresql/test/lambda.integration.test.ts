@@ -12,7 +12,8 @@ import {
 } from "../lib/lambda.types";
 import { Client } from "pg";
 import { createDatabase, createRole } from "../lib/postgres";
-import { createSecret, dbExists, getDbOwner, roleExists } from "./helpers";
+import { handler as roleMembershipHandler } from "../lib/role-membership.handler";
+import { createSecret, dbExists, getDbOwner, isMemberOf, roleExists } from "./helpers";
 import { secretsmanager } from "../lib/util";
 import { beforeEach, afterEach, describe, test, expect, vi } from "vitest";
 import { createRequire } from "node:module";
@@ -446,6 +447,186 @@ describe("database", () => {
     await dbHandler(event);
 
     expect(await getDbOwner(masterClient, newDbName)).toEqual(updatedDbRole);
+    await masterClient.end();
+  });
+});
+
+describe("role membership", () => {
+  test("grants the membership on create and revokes it on delete", async () => {
+    // Arrange
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const grantedRole = "replicator";
+    const memberRole = "myuser";
+    await createRole({ client: masterClient, name: grantedRole, password: "rolepwd" });
+    await createRole({ client: masterClient, name: memberRole, password: "rolepwd" });
+
+    const baseEvent = {
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "Custom::Postgresql-RoleMembership",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Role: grantedRole,
+        Member: memberRole,
+      },
+    };
+
+    // Act
+    await roleMembershipHandler({ ...baseEvent, RequestType: "Create" });
+
+    // Assert
+    expect(
+      await isMemberOf({ client: masterClient, member: memberRole, role: grantedRole })
+    ).toEqual(true);
+
+    // Act
+    await roleMembershipHandler({ ...baseEvent, RequestType: "Delete" });
+
+    // Assert
+    expect(
+      await isMemberOf({ client: masterClient, member: memberRole, role: grantedRole })
+    ).toEqual(false);
+    await masterClient.end();
+  });
+
+  test("succeeds on delete when the role has already been dropped", async () => {
+    // Arrange
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const grantedRole = "replicator";
+    const memberRole = "myuser";
+    await createRole({ client: masterClient, name: grantedRole, password: "rolepwd" });
+    await createRole({ client: masterClient, name: memberRole, password: "rolepwd" });
+
+    const baseEvent = {
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "Custom::Postgresql-RoleMembership",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Role: grantedRole,
+        Member: memberRole,
+      },
+    };
+    await roleMembershipHandler({ ...baseEvent, RequestType: "Create" });
+
+    // Dropping the role revokes the membership with it, which is the state a
+    // stack teardown leaves behind when the role is deleted first:
+    await masterClient.query(`DROP ROLE ${grantedRole}`);
+
+    // Act
+    const deleteMembership = () =>
+      roleMembershipHandler({ ...baseEvent, RequestType: "Delete" });
+
+    // Assert
+    await expect(deleteMembership()).resolves.toEqual({});
+    await masterClient.end();
+  });
+
+  test("grants the new membership when the role changes", async () => {
+    // Arrange
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const oldRole = "replicator";
+    const newRole = "monitor";
+    const memberRole = "myuser";
+    await createRole({ client: masterClient, name: oldRole, password: "rolepwd" });
+    await createRole({ client: masterClient, name: newRole, password: "rolepwd" });
+    await createRole({ client: masterClient, name: memberRole, password: "rolepwd" });
+
+    const connection = {
+      Host: pgHost,
+      Port: pgPort,
+      Username: DB_MASTER_USERNAME,
+      Database: DB_DEFAULT_DB,
+      PasswordArn: masterPasswordArn,
+      SSLMode: "disable" as const,
+    };
+    const baseEvent = {
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "Custom::Postgresql-RoleMembership",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: connection,
+        Role: oldRole,
+        Member: memberRole,
+      },
+    };
+    const createResponse = await roleMembershipHandler({
+      ...baseEvent,
+      RequestType: "Create",
+    });
+    const physicalResourceId = (createResponse as { PhysicalResourceId: string })
+      .PhysicalResourceId;
+
+    // Act
+    const updateResponse = await roleMembershipHandler({
+      ...baseEvent,
+      RequestType: "Update",
+      PhysicalResourceId: physicalResourceId,
+      OldResourceProperties: baseEvent.ResourceProperties,
+      ResourceProperties: { ...baseEvent.ResourceProperties, Role: newRole },
+    });
+
+    // Assert: a changed physical id is what makes CloudFormation treat the
+    //         update as a replacement and send a delete for the old membership
+    expect(await isMemberOf({ client: masterClient, member: memberRole, role: newRole })).toEqual(
+      true
+    );
+    expect((updateResponse as { PhysicalResourceId: string }).PhysicalResourceId).not.toEqual(
+      physicalResourceId
+    );
     await masterClient.end();
   });
 });

@@ -68,3 +68,16 @@ export const getDbOwner = async (
   }
   return dbRow.owner;
 };
+
+export const isMemberOf = async (props: {
+  client: Client;
+  member: string;
+  role: string;
+}): Promise<boolean> => {
+  const { client, member, role } = props;
+  const { rows } = await client.query(
+    "SELECT pg_has_role($1, $2, 'member') AS is_member",
+    [member, role]
+  );
+  return rows[0].is_member;
+};
