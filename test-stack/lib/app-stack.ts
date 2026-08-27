@@ -1,11 +1,9 @@
-import { Provider } from "@botpress/cdk-postgresql/lib/provider";
+import { Database, Provider, Role } from "@botpress/cdk-postgresql";
 import * as cdk from "aws-cdk-lib";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { Role } from "@botpress/cdk-postgresql/lib/role";
-import { Database } from "@botpress/cdk-postgresql/lib/database";
 
 interface AppStackProps extends cdk.StackProps {
   publicCluster: rds.IDatabaseCluster;

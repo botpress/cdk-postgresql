@@ -1,4 +1,4 @@
-import { test } from "@jest/globals";
+import { test, describe } from "vitest";
 import { Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
@@ -6,16 +6,13 @@ import { Construct } from "constructs";
 import { Database, Role, Provider } from "../lib";
 
 class TestStack extends cdk.Stack {
-  readonly exportPrefix: string;
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id);
+    super(scope, id, props);
   }
 }
 
 const getLogicalId = (construct: Construct) =>
-  cdk.Stack.of(construct).getLogicalId(
-    construct.node.defaultChild as cdk.CfnElement
-  );
+  cdk.Stack.of(construct).getLogicalId(construct.node.defaultChild as cdk.CfnElement);
 
 describe("database", () => {
   test("has correct props", () => {
@@ -93,7 +90,7 @@ describe("database", () => {
     // but only 3 Functions:
     // * 1 for the DB handler (created by us)
     // * 1 for the DB provider (created by us)
-    // * 1 for the LogRetention (created by the CDK))
+    // * 1 for the LogRetention (created by the CDK)
     template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });
@@ -103,10 +100,7 @@ describe("role", () => {
     const app = new cdk.App();
     const stack = new TestStack(app, "Stack");
 
-    const connectionPassword = new secretsmanager.Secret(
-      stack,
-      "ConnectionPassword"
-    );
+    const connectionPassword = new secretsmanager.Secret(stack, "ConnectionPassword");
     const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
 
     const host = "somedb.com";
@@ -148,10 +142,7 @@ describe("role", () => {
     const app = new cdk.App();
     const stack = new TestStack(app, "Stack");
 
-    const connectionPassword = new secretsmanager.Secret(
-      stack,
-      "ConnectionPassword"
-    );
+    const connectionPassword = new secretsmanager.Secret(stack, "ConnectionPassword");
     const rolePassword = new secretsmanager.Secret(stack, "RolePassword");
 
     const host = "somedb.com";
@@ -181,7 +172,7 @@ describe("role", () => {
     // but only 3 Functions:
     // * 1 for the Role handler (created by us)
     // * 1 for the Role provider (created by us)
-    // * 1 for the LogRetention (created by the CDK))
+    // * 1 for the LogRetention (created by the CDK)
     template.resourceCountIs("AWS::Lambda::Function", 3);
   });
 });

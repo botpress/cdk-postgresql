@@ -1,6 +1,5 @@
 import { handler as dbHandler } from "../lib/database.handler";
-import { handler as roleHandler, updateRoleName } from "../lib/role.handler";
-const utilModule = require("../lib/util");
+import { handler as roleHandler } from "../lib/role.handler";
 import { GenericContainer, StartedTestContainer } from "testcontainers";
 import ms from "ms";
 import {
@@ -11,47 +10,50 @@ import {
   UpdateDatabaseEvent,
   UpdateRoleEvent,
 } from "../lib/lambda.types";
-import { SecretsManager } from "@aws-sdk/client-secrets-manager";
 import { Client } from "pg";
 import { createDatabase, createRole } from "../lib/postgres";
 import { createSecret, dbExists, getDbOwner, roleExists } from "./helpers";
 import { secretsmanager } from "../lib/util";
+import { beforeEach, afterEach, describe, test, expect, vi } from "vitest";
 
 const DB_PORT = 5432;
 const DB_MASTER_USERNAME = "postgres";
 const DB_MASTER_PASSWORD = "masterpwd";
 const DB_DEFAULT_DB = "postgres";
+const LOCALSTACK_PORT = 4566;
+
+// The AWS SDK resolves AWS_ENDPOINT_URL once per client and caches it, and
+// lib/util.ts holds a single client for the whole process, so LocalStack has
+// to answer on the same host port for every test in this file:
+const LOCALSTACK_HOST_PORT = 14566;
 
 let pgContainer: StartedTestContainer;
 let localstackContainer: StartedTestContainer;
 let masterPasswordArn: string;
-let secretsManager: SecretsManager;
 let pgHost: string;
 let pgPort: number;
 
 beforeEach(async () => {
-  pgContainer = await new GenericContainer("postgres")
+  pgContainer = await new GenericContainer("postgres:16")
     .withExposedPorts(DB_PORT)
-    .withEnv("POSTGRES_PASSWORD", DB_MASTER_PASSWORD)
+    .withEnvironment({ POSTGRES_PASSWORD: DB_MASTER_PASSWORD })
     .start();
-  localstackContainer = await new GenericContainer("localstack/localstack")
-    .withEnv("SERVICES", "secretsmanager")
-    .withExposedPorts(4566)
+  localstackContainer = await new GenericContainer("localstack/localstack:3")
+    .withEnvironment({ SERVICES: "secretsmanager" })
+    .withExposedPorts({ container: LOCALSTACK_PORT, host: LOCALSTACK_HOST_PORT })
     .start();
 
   pgHost = pgContainer.getHost();
   pgPort = pgContainer.getMappedPort(DB_PORT);
 
-  secretsManager = new SecretsManager({
-    endpoint: `http://localhost:${localstackContainer.getMappedPort(4566)}`,
-  });
-  utilModule.secretsmanager = secretsManager;
+  vi.stubEnv("AWS_ENDPOINT_URL", `http://localhost:${LOCALSTACK_HOST_PORT}`);
   masterPasswordArn = await createSecret(secretsmanager, DB_MASTER_PASSWORD);
 }, ms("2m"));
 
 afterEach(async () => {
-  await pgContainer.stop();
-  await localstackContainer.stop();
+  vi.unstubAllEnvs();
+  await pgContainer?.stop();
+  await localstackContainer?.stop();
 });
 
 describe("role", () => {
@@ -169,10 +171,7 @@ describe("role", () => {
     const updatedRoleName = roleName + "updated";
     const updatedRolePwd = rolePwd + "updated";
 
-    const updatedRolePwdArn = await createSecret(
-      secretsManager,
-      updatedRolePwd
-    );
+    const updatedRolePwdArn = await createSecret(secretsmanager, updatedRolePwd);
 
     const event: UpdateRoleEvent = {
       RequestType: "Update",
@@ -197,6 +196,7 @@ describe("role", () => {
         PasswordArn: updatedRolePwdArn,
       },
       OldResourceProperties: {
+        ServiceToken: "",
         Connection: {
           Host: pgHost,
           Port: pgPort,
@@ -236,7 +236,7 @@ describe("role", () => {
       secretsmanager,
       JSON.stringify({
         [passwordField]: masterpassword,
-      })
+      }),
     );
 
     const rolePasswordArn = await createSecret(secretsmanager, newRolePwd);
@@ -428,6 +428,7 @@ describe("database", () => {
         Owner: updatedDbRole,
       },
       OldResourceProperties: {
+        ServiceToken: "",
         Connection: {
           Host: pgHost,
           Port: pgPort,

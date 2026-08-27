@@ -45,6 +45,7 @@ export interface UpdateDatabaseEvent
     Owner: string;
   };
   OldResourceProperties: {
+    ServiceToken: string;
     Connection: Connection;
     Name: string;
     Owner: string;
@@ -80,6 +81,7 @@ export interface UpdateRoleEvent
     PasswordArn: string;
   };
   OldResourceProperties: {
+    ServiceToken: string;
     Connection: Connection;
     Name: string;
     PasswordArn: string;

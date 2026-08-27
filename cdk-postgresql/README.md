@@ -4,7 +4,7 @@
 
 ## Installation
 
-`npm install @botpress/cdk-postgresql` or `yarn add @botpress/cdk-postgresql`
+`pnpm install @botpress/cdk-postgresql`
 
 ## Usage
 

@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as lambda from "aws-cdk-lib/aws-lambda-nodejs";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as cr from "aws-cdk-lib/custom-resources";
@@ -95,11 +96,10 @@ export class Provider extends Construct implements iam.IGrantable {
     const handlerSecurityGroup = vpc
       ? new ec2.SecurityGroup(this, "HandlerSecurityGroup", { vpc })
       : undefined;
-    const handlerSecurityGroups = handlerSecurityGroup
-      ? [handlerSecurityGroup]
-      : undefined;
+    const handlerSecurityGroups = handlerSecurityGroup ? [handlerSecurityGroup] : undefined;
     const handler = new lambda.NodejsFunction(scope, "handler", {
-      entry: path.join(__dirname, "handler.js"),
+      entry: path.join(__dirname, "..", "dist", "handler.cjs"),
+      runtime: Runtime.NODEJS_24_X,
       bundling: {
         nodeModules: ["pg", "pg-format"],
       },
@@ -124,7 +124,7 @@ export class Provider extends Construct implements iam.IGrantable {
           handlerSecurityGroup,
           ec2.Port.tcp(this.port),
           "cdk-postgresql provider",
-          true
+          true,
         );
       }
     }
