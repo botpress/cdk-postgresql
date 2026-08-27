@@ -509,6 +509,59 @@ describe("role membership", () => {
     await masterClient.end();
   });
 
+  test("succeeds on delete when the role has already been dropped", async () => {
+    // Arrange
+    const masterClient = new Client({
+      host: pgHost,
+      port: pgPort,
+      database: DB_DEFAULT_DB,
+      user: DB_MASTER_USERNAME,
+      password: DB_MASTER_PASSWORD,
+    });
+    await masterClient.connect();
+
+    const grantedRole = "replicator";
+    const memberRole = "myuser";
+    await createRole({ client: masterClient, name: grantedRole, password: "rolepwd" });
+    await createRole({ client: masterClient, name: memberRole, password: "rolepwd" });
+
+    const baseEvent = {
+      ServiceToken: "",
+      ResponseURL: "",
+      StackId: "",
+      RequestId: "",
+      LogicalResourceId: "",
+      PhysicalResourceId: "",
+      ResourceType: "Custom::Postgresql-RoleMembership",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost,
+          Port: pgPort,
+          Username: DB_MASTER_USERNAME,
+          Database: DB_DEFAULT_DB,
+          PasswordArn: masterPasswordArn,
+          SSLMode: "disable",
+        },
+        Role: grantedRole,
+        Member: memberRole,
+      },
+    };
+    await roleMembershipHandler({ ...baseEvent, RequestType: "Create" });
+
+    // Dropping the role revokes the membership with it, which is the state a
+    // stack teardown leaves behind when the role is deleted first:
+    await masterClient.query(`DROP ROLE ${grantedRole}`);
+
+    // Act
+    const deleteMembership = () =>
+      roleMembershipHandler({ ...baseEvent, RequestType: "Delete" });
+
+    // Assert
+    await expect(deleteMembership()).resolves.toEqual({});
+    await masterClient.end();
+  });
+
   test("grants the new membership when the role changes", async () => {
     // Arrange
     const masterClient = new Client({
