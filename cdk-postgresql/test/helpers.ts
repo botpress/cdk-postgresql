@@ -81,3 +81,14 @@ export const isMemberOf = async (props: {
   );
   return rows[0].is_member;
 };
+
+export const replicationSlotExists = async (
+  client: Client,
+  name: string
+): Promise<boolean> => {
+  const { rows } = await client.query(
+    "SELECT 1 FROM pg_replication_slots WHERE slot_name = $1 AND database = current_database()",
+    [name]
+  );
+  return rows.length > 0;
+};
