@@ -32,7 +32,7 @@
     "watch": "pnpm exec tsdown -w",
     "check": "pnpm run check:type",
     "check:type": "pnpm exec tsc --noEmit",
-    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test": "pnpm run build && pnpm exec vitest --run",
     "test:unit": "pnpm run build && pnpm exec vitest --run --project=unit",
     "test:integration": "pnpm run build && pnpm exec vitest --run --project=integration",
     "prepublishOnly": "pnpm run build"

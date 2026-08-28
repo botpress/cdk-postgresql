@@ -1,6 +1,5 @@
 import { handler as dbHandler } from "../lib/database.handler";
 import { handler as roleHandler } from "../lib/role.handler";
-import { GenericContainer, StartedTestContainer } from "testcontainers";
 import ms from "ms";
 import {
   CreateDatabaseEvent,
@@ -24,50 +23,49 @@ import {
   roleExists,
 } from "./helpers";
 import { secretsmanager } from "../lib/util";
-import { beforeEach, afterEach, describe, test, expect, vi } from "vitest";
+import { beforeAll, afterAll, beforeEach, describe, test, expect, vi } from "vitest";
 import { createRequire } from "node:module";
+import { Server } from "node:http";
+import {
+  SECRETS_MANAGER_ENDPOINT,
+  startFakeSecretsManager,
+} from "./fixtures/fake-secrets-manager";
+import {
+  DB_DEFAULT_DB,
+  DB_MASTER_PASSWORD,
+  DB_MASTER_USERNAME,
+  PostgresCluster,
+  startPostgresCluster,
+} from "./fixtures/postgres-cluster";
 
-const DB_PORT = 5432;
-const DB_MASTER_USERNAME = "postgres";
-const DB_MASTER_PASSWORD = "masterpwd";
-const DB_DEFAULT_DB = "postgres";
-const LOCALSTACK_PORT = 4566;
-
-// The AWS SDK resolves AWS_ENDPOINT_URL once per client and caches it, and
-// lib/util.ts holds a single client for the whole process, so LocalStack has
-// to answer on the same host port for every test in this file:
-const LOCALSTACK_HOST_PORT = 14566;
-
-let pgContainer: StartedTestContainer;
-let localstackContainer: StartedTestContainer;
+let cluster: PostgresCluster;
+let secretsManagerServer: Server;
 let masterPasswordArn: string;
 let pgHost: string;
 let pgPort: number;
 
-beforeEach(async () => {
-  pgContainer = await new GenericContainer("postgres:16")
-    .withExposedPorts(DB_PORT)
-    .withEnvironment({ POSTGRES_PASSWORD: DB_MASTER_PASSWORD })
-    // Logical replication slots require logical write-ahead-log decoding:
-    .withCommand(["postgres", "-c", "wal_level=logical"])
-    .start();
-  localstackContainer = await new GenericContainer("localstack/localstack:3")
-    .withEnvironment({ SERVICES: "secretsmanager" })
-    .withExposedPorts({ container: LOCALSTACK_PORT, host: LOCALSTACK_HOST_PORT })
-    .start();
+beforeAll(async () => {
+  [cluster, secretsManagerServer] = await Promise.all([
+    startPostgresCluster(),
+    startFakeSecretsManager(),
+  ]);
 
-  pgHost = pgContainer.getHost();
-  pgPort = pgContainer.getMappedPort(DB_PORT);
+  pgHost = cluster.host;
+  pgPort = cluster.port;
 
-  vi.stubEnv("AWS_ENDPOINT_URL", `http://localhost:${LOCALSTACK_HOST_PORT}`);
+  vi.stubEnv("AWS_ENDPOINT_URL", SECRETS_MANAGER_ENDPOINT);
   masterPasswordArn = await createSecret(secretsmanager, DB_MASTER_PASSWORD);
 }, ms("2m"));
 
-afterEach(async () => {
+afterAll(async () => {
   vi.unstubAllEnvs();
-  await pgContainer?.stop();
-  await localstackContainer?.stop();
+  secretsManagerServer?.close();
+  await cluster?.stop();
 });
+
+// The database container is shared by every test in this file, so each test
+// starts from a blank cluster:
+beforeEach(() => cluster.reset());
 
 describe("role", () => {
   test("create", async () => {
