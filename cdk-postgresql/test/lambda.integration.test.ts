@@ -59,7 +59,20 @@ beforeAll(async () => {
 
 afterAll(async () => {
   vi.unstubAllEnvs();
-  secretsManagerServer?.close();
+
+  if (secretsManagerServer) {
+    await new Promise<void>((resolve, reject) => {
+      secretsManagerServer.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }
+
   await cluster?.stop();
 });
 
