@@ -105,3 +105,34 @@ export const revokeRoleMembership = async (props: {
     console.warn(thrown.message);
   }
 };
+
+export const createReplicationSlot = async (props: {
+  client: Client;
+  name: string;
+  plugin: string;
+}) => {
+  const { client, name, plugin } = props;
+
+  await client.query("SELECT pg_create_logical_replication_slot($1, $2)", [
+    name,
+    plugin,
+  ]);
+};
+
+/**
+ * Dropping is scoped to the connected database. A slot name is unique across
+ * the whole cluster, so an unscoped drop would destroy a slot decoding another
+ * database, and a dropped slot loses its replication position permanently.
+ * A slot that is already gone is left alone.
+ */
+export const dropReplicationSlot = async (props: {
+  client: Client;
+  name: string;
+}) => {
+  const { client, name } = props;
+
+  await client.query(
+    "SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE slot_name = $1 AND database = current_database()",
+    [name]
+  );
+};
