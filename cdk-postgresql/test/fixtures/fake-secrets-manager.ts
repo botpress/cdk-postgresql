@@ -39,7 +39,19 @@ export const startFakeSecretsManager = () => {
     });
   });
 
-  return new Promise<Server>((resolve) => {
-    server.listen(SECRETS_MANAGER_PORT, () => resolve(server));
+  return new Promise<Server>((resolve, reject) => {
+    const onListening = () => {
+      server.removeListener("error", onError);
+      resolve(server);
+    };
+
+    const onError = (error: Error) => {
+      server.removeListener("listening", onListening);
+      reject(error);
+    };
+
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(SECRETS_MANAGER_PORT);
   });
 };
