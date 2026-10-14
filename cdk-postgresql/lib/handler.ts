@@ -5,6 +5,7 @@ import { handler as dbHandler } from "./database.handler";
 import { handler as roleHandler } from "./role.handler";
 import { handler as roleMembershipHandler } from "./role-membership.handler";
 import { handler as replicationSlotHandler } from "./replication-slot.handler";
+import { handler as readAccessHandler } from "./read-access.handler";
 
 export const handler = async (event: CloudFormationCustomResourceEvent) => {
   switch (event.ResourceType) {
@@ -16,6 +17,8 @@ export const handler = async (event: CloudFormationCustomResourceEvent) => {
       return roleMembershipHandler(event);
     case "Custom::Postgresql-ReplicationSlot":
       return replicationSlotHandler(event);
+    case "Custom::Postgresql-ReadAccess":
+      return readAccessHandler(event);
     default:
       throw new VError(`unexpected ResourceType: ${event.ResourceType}`);
   }

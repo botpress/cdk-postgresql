@@ -3,3 +3,4 @@ export * from "./role";
 export * from "./role-membership";
 export * from "./replication-slot";
 export * from "./provider";
+export * from "./read-access";
