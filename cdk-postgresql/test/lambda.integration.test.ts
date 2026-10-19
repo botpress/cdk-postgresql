@@ -81,7 +81,7 @@ afterAll(async () => {
 // starts from a blank cluster:
 beforeEach(() => cluster.reset());
 
-test("read access covers existing/RLS and future tables from both creators without writes", async () => {
+test.each([true, false, undefined])("read access covers existing/RLS and future tables without writes (BypassRls: %s)", async (bypassRls) => {
   const client = await cluster.connectTo(DB_DEFAULT_DB);
   try {
     await client.query(`
@@ -92,6 +92,8 @@ test("read access covers existing/RLS and future tables from both creators witho
       CREATE TABLE public.items (id int);
       INSERT INTO public.items VALUES (1);
       ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
+      CREATE TABLE public.ordinary (id int);
+      INSERT INTO public.ordinary VALUES (1);
       RESET ROLE;
     `);
     const event = {
@@ -106,7 +108,8 @@ test("read access covers existing/RLS and future tables from both creators witho
           Username: DB_MASTER_USERNAME, PasswordArn: masterPasswordArn, SSLMode: "disable",
         },
         Role: "reader", Schema: "public",
-        CreatorRoles: ["app", DB_MASTER_USERNAME], BypassRls: true,
+        CreatorRoles: ["app", DB_MASTER_USERNAME],
+        ...(bypassRls === undefined ? {} : { BypassRls: bypassRls }),
       },
     } as CloudFormationCustomResourceEvent;
     await expect(handler({
@@ -127,14 +130,19 @@ test("read access covers existing/RLS and future tables from both creators witho
       RESET ROLE;
       SET ROLE reader;
     `);
-    for (const table of ["items", "from_master", "from_app"]) {
+    expect((await client.query(
+      "SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user"
+    )).rows[0].rolbypassrls).toBe(bypassRls === true);
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(bypassRls ? 1 : 0);
+    for (const table of ["ordinary", "from_master", "from_app"]) {
       expect((await client.query(`SELECT * FROM public.${table}`)).rowCount).toBe(1);
     }
     await expect(client.query("INSERT INTO public.items VALUES (4)")).rejects.toThrow(/permission denied/);
     await expect(client.query("UPDATE public.items SET id = 4")).rejects.toThrow(/permission denied/);
     await expect(client.query("DELETE FROM public.items")).rejects.toThrow(/permission denied/);
     await handler({ ...event, RequestType: "Delete", PhysicalResourceId: "ReadAccess" });
-    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(1);
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(bypassRls ? 1 : 0);
+    expect((await client.query("SELECT * FROM public.ordinary")).rowCount).toBe(1);
   } finally {
     await client.end();
   }
