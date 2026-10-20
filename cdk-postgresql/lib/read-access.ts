@@ -11,8 +11,10 @@ export interface ReadAccessProps {
   schema?: string;
   /** Roles that create future tables, not the reader role. Must exist. */
   creatorRoles: string[];
-  /** Grant a cluster-wide RLS exemption. Omitted/false leaves RLS attributes unchanged. */
-  bypassRls?: boolean;
+  /**
+   * Grant a cluster-wide RLS exemption. False, omission and removal do not revoke it.
+   */
+  grantBypassRls?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ export class ReadAccess extends Construct {
         role: props.role,
         schema: props.schema ?? "public",
         creatorRoles: props.creatorRoles,
-        bypassRls: props.bypassRls ?? false,
+        grantBypassRls: props.grantBypassRls ?? false,
       },
       pascalCaseProperties: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,

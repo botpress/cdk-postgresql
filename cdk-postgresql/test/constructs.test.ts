@@ -23,7 +23,7 @@ test("read access reuses the provider and retains grants", () => {
     database: "appdb",
     role: "reader",
     creatorRoles: ["app", "master"],
-    bypassRls: true,
+    grantBypassRls: true,
   });
   const template = Template.fromStack(stack);
   template.hasResource("Custom::Postgresql-ReadAccess", {
@@ -35,7 +35,7 @@ test("read access reuses the provider and retains grants", () => {
       Role: "reader",
       Schema: "public",
       CreatorRoles: ["app", "master"],
-      BypassRls: true,
+      GrantBypassRls: true,
     },
   });
   template.resourceCountIs("AWS::Lambda::Function", 3);

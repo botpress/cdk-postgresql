@@ -81,7 +81,7 @@ afterAll(async () => {
 // starts from a blank cluster:
 beforeEach(() => cluster.reset());
 
-test.each([true, false, undefined])("read access covers existing/RLS and future tables without writes (BypassRls: %s)", async (bypassRls) => {
+test.each([true, false, undefined])("read access covers existing/RLS and future tables without writes (GrantBypassRls: %s)", async (grantBypassRls) => {
   const client = await cluster.connectTo(DB_DEFAULT_DB);
   try {
     await client.query(`
@@ -109,7 +109,7 @@ test.each([true, false, undefined])("read access covers existing/RLS and future 
         },
         Role: "reader", Schema: "public",
         CreatorRoles: ["app", DB_MASTER_USERNAME],
-        ...(bypassRls === undefined ? {} : { BypassRls: bypassRls }),
+        ...(grantBypassRls === undefined ? {} : { GrantBypassRls: grantBypassRls }),
       },
     } as CloudFormationCustomResourceEvent;
     await expect(handler({
@@ -132,8 +132,8 @@ test.each([true, false, undefined])("read access covers existing/RLS and future 
     `);
     expect((await client.query(
       "SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user"
-    )).rows[0].rolbypassrls).toBe(bypassRls === true);
-    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(bypassRls ? 1 : 0);
+    )).rows[0].rolbypassrls).toBe(grantBypassRls === true);
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(grantBypassRls ? 1 : 0);
     for (const table of ["ordinary", "from_master", "from_app"]) {
       expect((await client.query(`SELECT * FROM public.${table}`)).rowCount).toBe(1);
     }
@@ -141,7 +141,7 @@ test.each([true, false, undefined])("read access covers existing/RLS and future 
     await expect(client.query("UPDATE public.items SET id = 4")).rejects.toThrow(/permission denied/);
     await expect(client.query("DELETE FROM public.items")).rejects.toThrow(/permission denied/);
     await handler({ ...event, RequestType: "Delete", PhysicalResourceId: "ReadAccess" });
-    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(bypassRls ? 1 : 0);
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(grantBypassRls ? 1 : 0);
     expect((await client.query("SELECT * FROM public.ordinary")).rowCount).toBe(1);
   } finally {
     await client.end();

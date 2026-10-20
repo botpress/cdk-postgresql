@@ -8,7 +8,7 @@ interface Props {
   Role: string;
   Schema: string;
   CreatorRoles: string[];
-  BypassRls: boolean | "true" | "false";
+  GrantBypassRls: boolean | "true" | "false";
 }
 
 export const handler = async (event: CloudFormationCustomResourceEvent) => {
@@ -22,7 +22,7 @@ export const handler = async (event: CloudFormationCustomResourceEvent) => {
   const role = quote(props.Role);
   const schema = quote(props.Schema);
   const creators = props.CreatorRoles.map(quote).join(", ");
-  const bypass = props.BypassRls === true || props.BypassRls === "true";
+  const bypass = props.GrantBypassRls === true || props.GrantBypassRls === "true";
   const client = await getConnectedClient(props.Connection);
   try {
     await client.query(`
