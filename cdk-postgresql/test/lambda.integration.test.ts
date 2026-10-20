@@ -1,5 +1,6 @@
 import { handler as dbHandler } from "../lib/database.handler";
 import { handler as roleHandler } from "../lib/role.handler";
+import { handler } from "../lib/handler";
 import ms from "ms";
 import {
   CreateDatabaseEvent,
@@ -79,6 +80,73 @@ afterAll(async () => {
 // The database container is shared by every test in this file, so each test
 // starts from a blank cluster:
 beforeEach(() => cluster.reset());
+
+test.each([true, false, undefined])("read access covers existing/RLS and future tables without writes (GrantBypassRls: %s)", async (grantBypassRls) => {
+  const client = await cluster.connectTo(DB_DEFAULT_DB);
+  try {
+    await client.query(`
+      CREATE ROLE app;
+      CREATE ROLE reader;
+      GRANT USAGE, CREATE ON SCHEMA public TO app;
+      SET ROLE app;
+      CREATE TABLE public.items (id int);
+      INSERT INTO public.items VALUES (1);
+      ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
+      CREATE TABLE public.ordinary (id int);
+      INSERT INTO public.ordinary VALUES (1);
+      RESET ROLE;
+    `);
+    const event = {
+      RequestType: "Create",
+      ResourceType: "Custom::Postgresql-ReadAccess",
+      LogicalResourceId: "ReadAccess",
+      ServiceToken: "", ResponseURL: "", StackId: "", RequestId: "",
+      ResourceProperties: {
+        ServiceToken: "",
+        Connection: {
+          Host: pgHost, Port: pgPort, Database: DB_DEFAULT_DB,
+          Username: DB_MASTER_USERNAME, PasswordArn: masterPasswordArn, SSLMode: "disable",
+        },
+        Role: "reader", Schema: "public",
+        CreatorRoles: ["app", DB_MASTER_USERNAME],
+        ...(grantBypassRls === undefined ? {} : { GrantBypassRls: grantBypassRls }),
+      },
+    } as CloudFormationCustomResourceEvent;
+    await expect(handler({
+      ...event,
+      ResourceProperties: { ...event.ResourceProperties, CreatorRoles: ["missing_creator"] },
+    })).rejects.toThrow(/does not exist/);
+    expect((await client.query(
+      "SELECT has_table_privilege('reader', 'public.items', 'SELECT') AS allowed"
+    )).rows[0].allowed).toBe(false);
+    await handler(event);
+    await handler({ ...event, RequestType: "Update", PhysicalResourceId: "ReadAccess", OldResourceProperties: event.ResourceProperties });
+    await client.query(`
+      CREATE TABLE public.from_master (id int);
+      INSERT INTO public.from_master VALUES (2);
+      SET ROLE app;
+      CREATE TABLE public.from_app (id int);
+      INSERT INTO public.from_app VALUES (3);
+      RESET ROLE;
+      SET ROLE reader;
+    `);
+    expect((await client.query(
+      "SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user"
+    )).rows[0].rolbypassrls).toBe(grantBypassRls === true);
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(grantBypassRls ? 1 : 0);
+    for (const table of ["ordinary", "from_master", "from_app"]) {
+      expect((await client.query(`SELECT * FROM public.${table}`)).rowCount).toBe(1);
+    }
+    await expect(client.query("INSERT INTO public.items VALUES (4)")).rejects.toThrow(/permission denied/);
+    await expect(client.query("UPDATE public.items SET id = 4")).rejects.toThrow(/permission denied/);
+    await expect(client.query("DELETE FROM public.items")).rejects.toThrow(/permission denied/);
+    await handler({ ...event, RequestType: "Delete", PhysicalResourceId: "ReadAccess" });
+    expect((await client.query("SELECT * FROM public.items")).rowCount).toBe(grantBypassRls ? 1 : 0);
+    expect((await client.query("SELECT * FROM public.ordinary")).rowCount).toBe(1);
+  } finally {
+    await client.end();
+  }
+});
 
 describe("role", () => {
   test("create", async () => {

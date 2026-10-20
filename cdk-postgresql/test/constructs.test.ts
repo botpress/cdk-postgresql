@@ -1,15 +1,45 @@
 import { test, describe } from "vitest";
-import { Template } from "aws-cdk-lib/assertions";
+import { Match, Template } from "aws-cdk-lib/assertions";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Database, Role, Provider, RoleMembership } from "../lib";
+import { Database, Role, Provider, RoleMembership, ReadAccess } from "../lib";
 
 class TestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
   }
 }
+
+test("read access reuses the provider and retains grants", () => {
+  const stack = new TestStack(new cdk.App(), "Stack");
+  const provider = new Provider(stack, "Provider", {
+    host: "db.example.com",
+    username: "master",
+    password: new secretsmanager.Secret(stack, "Password"),
+  });
+  new ReadAccess(stack, "Access", {
+    provider,
+    database: "appdb",
+    role: "reader",
+    creatorRoles: ["app", "master"],
+    grantBypassRls: true,
+  });
+  const template = Template.fromStack(stack);
+  template.hasResource("Custom::Postgresql-ReadAccess", {
+    DeletionPolicy: "Retain",
+    UpdateReplacePolicy: "Retain",
+    Properties: {
+      ServiceToken: stack.resolve(provider.serviceToken),
+      Connection: Match.objectLike({ Database: "appdb" }),
+      Role: "reader",
+      Schema: "public",
+      CreatorRoles: ["app", "master"],
+      GrantBypassRls: true,
+    },
+  });
+  template.resourceCountIs("AWS::Lambda::Function", 3);
+});
 
 const getLogicalId = (construct: Construct) =>
   cdk.Stack.of(construct).getLogicalId(construct.node.defaultChild as cdk.CfnElement);
